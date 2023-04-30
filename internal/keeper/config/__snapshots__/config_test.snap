@@ -1,0 +1,20 @@
+
+[TestNewConfig - 1]
+Configuration:
+        Listening address: 0.0.0.0:50051
+        Database URI: postgres://*****:*****@127.0.0.1:5432/goph?sslmode=disable
+        Secret: ***
+        Certificate path: ../../ssl/ca/keeper.crt
+        Certificate key path: ../../ssl/ca/keeper.key
+        Log level: info
+---
+
+[TestEmptyConfigToString - 1]
+Configuration:
+        Listening address: 
+        Database URI: 
+        Secret: 
+        Certificate path: 
+        Certificate key path: 
+        Log level: 
+---

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'docs/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: golang:1.20
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate dev certificates
+        run: make ssl
+
+      - name: Build keeper
+        run: make keeper
+
+      - name: Build keepctl
+        run: make keepctl
+
+      - name: Run unit tests
+        run: make test
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.52.2
+
+      - name: shellcheck
+        run: shellcheck --severity=warning ./scripts/*
+
+      - name: hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: "build/docker/Dockerfile"

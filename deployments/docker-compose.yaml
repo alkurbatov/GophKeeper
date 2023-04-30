@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:15.2
+    command: ["-c", "log_statement=all", "-c", "log_destination=stderr"]
+    environment:
+      PGUSER: postgres
+      POSTGRES_USER: postgres
+      PGPASSWORD: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATABASE: goph
+      POSTGRES_DB: goph
+    ports:
+      - "5432:5432"
+    networks:
+      - goph
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+
+  init-keeper:
+    build:
+      context: ..
+      dockerfile: build/docker/Dockerfile
+    entrypoint: ./init-keeper
+    networks:
+      - goph
+    env_file: keeper.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  keeper:
+    build:
+      context: ..
+      dockerfile: build/docker/Dockerfile
+    ports:
+      - "50051:50051"
+    networks:
+      - goph
+    env_file: keeper.env
+    depends_on:
+      init-keeper:
+        condition: service_completed_successfully
+
+networks:
+  goph:
+    driver: bridge
