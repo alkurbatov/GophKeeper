@@ -57,7 +57,7 @@ func (c *Connection) Instance() *grpc.ClientConn {
 	return c.conn
 }
 
-// Close stop gRPC client connection gracefully.
+// Close stops gRPC client connection gracefully.
 func (c *Connection) Close() error {
 	if c.conn == nil {
 		return nil

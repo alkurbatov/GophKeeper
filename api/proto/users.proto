@@ -9,8 +9,7 @@ message RegisterUserRequest {
 }
 
 message RegisterUserResponse {
-  string user_id = 1; // Unique user ID in UUIDv4 form.
-  string access_token = 2; // JWT access token.
+  string access_token = 1; // JWT access token.
 }
 
 service Users {

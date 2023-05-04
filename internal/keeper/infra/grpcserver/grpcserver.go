@@ -18,7 +18,7 @@ type Server struct {
 	notify  chan error
 }
 
-// New creates new instance of gRPC server.
+// NewSecureServer creates new instance of gRPC server operating over SSL.
 func New(address, crtPath, keyPath string) (*Server, error) {
 	creds, err := credentials.NewServerTLSFromFile(crtPath, keyPath)
 	if err != nil {

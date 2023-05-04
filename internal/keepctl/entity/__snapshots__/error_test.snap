@@ -1,0 +1,26 @@
+
+[TestRequestErrorFromBasicError - 1]
+grpc: the server has been stopped (255)
+---
+
+[TestRequestErrorFromGRPCError - 1]
+bad login or password (16)
+---
+
+[TestUnwrap/Test_unwrap_of_RequestError - 1]
+grpc: the server has been stopped (255)
+---
+
+[TestUnwrap/Test_unwrap_of_other_errors - 1]
+ErrorTest - TestUnwrap - SomeError: grpc: the server has been stopped
+---
+
+[TestRequestErrorFromGenericGRPCError - 1]
+bad login or password (16)
+---
+
+[TestRequestErrorFromGRPCBadRequest - 1]
+invalid request (3)
+    "username": not set
+    "security_key": not set
+---

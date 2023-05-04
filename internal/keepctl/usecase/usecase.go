@@ -1,12 +1,20 @@
 package usecase
 
-import "github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+import (
+	"context"
 
-type Auth interface{}
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+)
+
+type Auth interface {
+	Login(ctx context.Context, username, password string) (string, error)
+}
 
 type Secrets interface{}
 
-type Users interface{}
+type Users interface {
+	Register(ctx context.Context, username, password string) (string, error)
+}
 
 // UseCases is a collection of business logic use cases.
 type UseCases struct {
@@ -18,7 +26,7 @@ type UseCases struct {
 // New creates and initializes collection of business logic use cases.
 func New(repos *repo.Repositories) *UseCases {
 	return &UseCases{
-		Auth:    NewAuthUseCase(repos.Users),
+		Auth:    NewAuthUseCase(repos.Auth),
 		Secrets: NewSecretsUseCase(repos.Secrets),
 		Users:   NewUsersUseCase(repos.Users),
 	}

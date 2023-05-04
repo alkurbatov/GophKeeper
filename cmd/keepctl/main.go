@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"os"
 
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/controller/cmdline"
 )
@@ -13,6 +13,6 @@ var (
 
 func main() {
 	if err := cmdline.Execute(buildVersion, buildDate); err != nil {
-		log.Fatalf("Command error: %s", err)
+		os.Exit(1)
 	}
 }

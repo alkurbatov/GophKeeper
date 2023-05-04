@@ -1,14 +1,14 @@
 package usecase
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
-	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/logger"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/repo"
 )
 
 var _ Auth = (*AuthUseCase)(nil)
-
-const _defaultMinimalSecretLength = 32
 
 // AuthUseCase contains business logic related to authentication.
 type AuthUseCase struct {
@@ -18,13 +18,25 @@ type AuthUseCase struct {
 
 // NewAuthUseCase create and initializes new AuthUseCase object.
 func NewAuthUseCase(
-	log *logger.Logger,
 	secret entity.Secret,
 	users repo.Users,
 ) *AuthUseCase {
-	if len([]byte(secret)) < _defaultMinimalSecretLength {
-		log.Warn().Msg("Insecure signature: secret key is shorter than 32 bytes!")
+	return &AuthUseCase{secret, users}
+}
+
+func (uc *AuthUseCase) Login(
+	ctx context.Context,
+	username, securityKey string,
+) (entity.AccessToken, error) {
+	user, err := uc.usersRepo.Verify(ctx, username, securityKey)
+	if err != nil {
+		return "", fmt.Errorf("AuthUseCase - Login - uc.usersRepo.Verify: %w", err)
 	}
 
-	return &AuthUseCase{secret, users}
+	accessToken, err := entity.NewAccessToken(user, uc.secret)
+	if err != nil {
+		return "", fmt.Errorf("AuthUseCase - Login - entity.NewAccessToken: %w", err)
+	}
+
+	return accessToken, nil
 }

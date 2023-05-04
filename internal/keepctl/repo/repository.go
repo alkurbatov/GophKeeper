@@ -1,14 +1,21 @@
 package repo
 
 import (
+	"context"
+
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/infra/grpcconn"
+	"github.com/alkurbatov/goph-keeper/pkg/goph"
 )
 
-type Auth interface{}
+type Auth interface {
+	Login(ctx context.Context, username, securityKey string) (string, error)
+}
 
 type Secrets interface{}
 
-type Users interface{}
+type Users interface {
+	Register(ctx context.Context, username, securityKey string) (string, error)
+}
 
 // Repositories is a collection of data repositories.
 type Repositories struct {
@@ -19,9 +26,11 @@ type Repositories struct {
 
 // New creates and initializes collection of data repositories.
 func New(conn *grpcconn.Connection) *Repositories {
+	c := conn.Instance()
+
 	return &Repositories{
-		Auth:    NewAuthRepo(conn),
-		Secrets: NewSecretsRepo(conn),
-		Users:   NewUsersRepo(conn),
+		Auth:    NewAuthRepo(goph.NewAuthClient(c)),
+		Secrets: NewSecretsRepo(goph.NewSecretsClient(c)),
+		Users:   NewUsersRepo(goph.NewUsersClient(c)),
 	}
 }

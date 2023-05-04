@@ -2,9 +2,13 @@ package v1
 
 import (
 	"context"
+	"errors"
 
+	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // UsersServer provides implementation of the Users API.
@@ -21,8 +25,26 @@ func NewUsersServer(users usecase.Users) *UsersServer {
 
 // Register creates new user.
 func (s UsersServer) Register(
-	context.Context,
-	*goph.RegisterUserRequest,
+	ctx context.Context,
+	req *goph.RegisterUserRequest,
 ) (*goph.RegisterUserResponse, error) {
-	return &goph.RegisterUserResponse{}, nil
+	username := req.GetUsername()
+	key := req.GetSecurityKey()
+
+	if details, ok := validateCredentials(username, key); !ok {
+		st := composeBadRequestError(details)
+
+		return nil, st.Err()
+	}
+
+	accessToken, err := s.usersUseCase.Register(ctx, username, key)
+	if err != nil {
+		if errors.Is(err, entity.ErrUserExists) {
+			return nil, status.Errorf(codes.AlreadyExists, entity.ErrUserExists.Error())
+		}
+
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &goph.RegisterUserResponse{AccessToken: accessToken.String()}, nil
 }

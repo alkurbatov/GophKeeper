@@ -13,14 +13,16 @@ var (
 	cfg       *config.Config
 	clientApp *app.App
 
-	verbose bool
-	address string
-	caPath  string
+	verbose  bool
+	address  string
+	caPath   string
+	username string
+	password string
 
 	rootCmd = &cobra.Command{
 		Use:               "keepctl",
 		Short:             "keepctl is an intercative commandline client for the goph-keeper service",
-		PersistentPreRunE: preRun,
+		PersistentPreRunE: initApp,
 	}
 )
 
@@ -35,7 +37,7 @@ func init() {
 	cobra.OnInitialize(initializeApp)
 	cobra.OnFinalize(finalizeApp)
 
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.PersistentFlags().StringVar(
 		&address,
 		"address",
@@ -48,6 +50,11 @@ func init() {
 		"",
 		"Path to certificate authority to verify server certificate",
 	)
+	rootCmd.PersistentFlags().StringVarP(&username, "username", "u", "", "Name of a user")
+	rootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Master password")
+
+	rootCmd.MarkFlagRequired("username")
+	rootCmd.MarkFlagRequired("password")
 
 	viper.BindPFlag("address", rootCmd.PersistentFlags().Lookup("address"))
 	viper.BindPFlag("ca-path", rootCmd.PersistentFlags().Lookup("ca-path"))
@@ -59,7 +66,12 @@ func initializeApp() {
 	cfg = config.New()
 }
 
-func preRun(*cobra.Command, []string) error {
+func initApp(cmd *cobra.Command, _ []string) error {
+	// NB (alkurbatov): Prerun is executed for EVERY command, even for noop like help.
+	if cmd.Name() == "help" {
+		return nil
+	}
+
 	var err error
 
 	clientApp, err = app.New(cfg)

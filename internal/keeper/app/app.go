@@ -18,7 +18,10 @@ import (
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 )
 
-const _defaultShutdownTimeout = 60 * time.Second
+const (
+	_defaultMinimalSecretLength = 32
+	_defaultShutdownTimeout     = 60 * time.Second
+)
 
 // Run initializes and starts the keeper service.
 func Run(cfg *config.Config) error {
@@ -29,20 +32,24 @@ func Run(cfg *config.Config) error {
 
 	log.Info().Msg(cfg.String())
 
+	if len([]byte(cfg.Secret)) < _defaultMinimalSecretLength {
+		log.Warn().Msg("Insecure signature: secret key is shorter than 32 bytes!")
+	}
+
 	pg, err := postgres.New(string(cfg.DatabaseURI), log)
 	if err != nil {
 		return fmt.Errorf("app - Run - postgres.New: %w", err)
 	}
 
 	repos := repo.New(log, pg)
-	usecases := usecase.New(log, cfg, repos)
+	usecases := usecase.New(cfg, repos)
 
 	grpcSrv, err := grpcserver.New(cfg.Address, cfg.CrtPath, cfg.KeyPath)
 	if err != nil {
 		return fmt.Errorf("app - Run - grpcserver.New: %w", err)
 	}
 
-	v1.RegisterRoutes(grpcSrv, usecases)
+	v1.RegisterRoutes(grpcSrv.Instance(), usecases)
 	grpcSrv.Start()
 
 	interrupt := make(chan os.Signal, 1)
@@ -75,7 +82,7 @@ func Run(cfg *config.Config) error {
 
 	select {
 	case <-stopped:
-		log.Info().Msg("Service shutdown successfully")
+		log.Info().Msg("Service shutdown successful")
 
 	case <-stopCtx.Done():
 		log.Warn().Msgf("Exceeded %s shutdown timeout, exit forcibly", _defaultShutdownTimeout)

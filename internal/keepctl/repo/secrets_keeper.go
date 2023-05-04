@@ -1,15 +1,15 @@
 package repo
 
-import "github.com/alkurbatov/goph-keeper/internal/keepctl/infra/grpcconn"
+import "github.com/alkurbatov/goph-keeper/pkg/goph"
 
 var _ Secrets = (*SecretsRepo)(nil)
 
 // SecretsRepo is facade to secrets stored in Keeper.
 type SecretsRepo struct {
-	conn *grpcconn.Connection
+	client goph.SecretsClient
 }
 
 // NewSecretsRepo creates and initializes SecretsRepo object.
-func NewSecretsRepo(conn *grpcconn.Connection) *SecretsRepo {
-	return &SecretsRepo{conn}
+func NewSecretsRepo(client goph.SecretsClient) *SecretsRepo {
+	return &SecretsRepo{client}
 }
