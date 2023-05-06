@@ -9,7 +9,6 @@ import (
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 func newRegisterUserRequest() *goph.RegisterUserRequest {
@@ -49,7 +48,7 @@ func TestRegisterOnOperationFailure(t *testing.T) {
 		newRegisterUserRequest(),
 		mock.Anything,
 	).
-		Return(nil, grpc.ErrServerStopped)
+		Return(nil, gophtest.ErrUnexpected)
 
 	sat := repo.NewUsersRepo(m)
 	_, err := sat.Register(context.Background(), gophtest.Username, gophtest.SecurityKey)

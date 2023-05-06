@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	v1 "github.com/alkurbatov/goph-keeper/internal/keeper/controller/grpc/v1"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
@@ -57,7 +58,7 @@ func TestLoginWithBadRequest(t *testing.T) {
 		},
 		{
 			name:     "Login fails if username is too long",
-			username: strings.Repeat("#", 129),
+			username: strings.Repeat("#", v1.DefaultMaxUsernameLength+1),
 			key:      gophtest.SecurityKey,
 		},
 	}

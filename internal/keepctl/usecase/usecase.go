@@ -3,17 +3,21 @@ package usecase
 import (
 	"context"
 
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+	uuid "github.com/satori/go.uuid"
 )
 
 type Auth interface {
-	Login(ctx context.Context, username, password string) (string, error)
+	Login(ctx context.Context, username string, key entity.Key) (string, error)
 }
 
-type Secrets interface{}
+type Secrets interface {
+	PushText(ctx context.Context, token, name, text, description string) (uuid.UUID, error)
+}
 
 type Users interface {
-	Register(ctx context.Context, username, password string) (string, error)
+	Register(ctx context.Context, username string, key entity.Key) (string, error)
 }
 
 // UseCases is a collection of business logic use cases.
@@ -24,10 +28,10 @@ type UseCases struct {
 }
 
 // New creates and initializes collection of business logic use cases.
-func New(repos *repo.Repositories) *UseCases {
+func New(key entity.Key, repos *repo.Repositories) *UseCases {
 	return &UseCases{
 		Auth:    NewAuthUseCase(repos.Auth),
-		Secrets: NewSecretsUseCase(repos.Secrets),
+		Secrets: NewSecretsUseCase(key, repos.Secrets),
 		Users:   NewUsersUseCase(repos.Users),
 	}
 }

@@ -13,7 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLogin(t *testing.T) {
+func doLogin(t *testing.T, repoErr error) (entity.AccessToken, error) {
+	t.Helper()
+
 	m := &repo.UsersRepoMock{}
 	m.On(
 		"Verify",
@@ -21,29 +23,25 @@ func TestLogin(t *testing.T) {
 		gophtest.Username,
 		gophtest.SecurityKey,
 	).
-		Return(entity.User{ID: uuid.NewV4(), Username: gophtest.Username}, nil)
+		Return(entity.User{ID: uuid.NewV4(), Username: gophtest.Username}, repoErr)
 
 	sat := usecase.NewAuthUseCase(gophtest.Secret, m)
 	accessToken, err := sat.Login(context.Background(), gophtest.Username, gophtest.SecurityKey)
 
-	require.NoError(t, err)
-	require.NotEmpty(t, accessToken)
 	m.AssertExpectations(t)
+
+	return accessToken, err
+}
+
+func TestLogin(t *testing.T) {
+	token, err := doLogin(t, nil)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
 }
 
 func TestLoginOnBadCredentials(t *testing.T) {
-	m := &repo.UsersRepoMock{}
-	m.On(
-		"Verify",
-		mock.Anything,
-		gophtest.Username,
-		gophtest.SecurityKey,
-	).
-		Return(entity.User{}, entity.ErrInvalidCredentials)
-
-	sat := usecase.NewAuthUseCase(gophtest.Secret, m)
-	_, err := sat.Login(context.Background(), gophtest.Username, gophtest.SecurityKey)
+	_, err := doLogin(t, entity.ErrInvalidCredentials)
 
 	require.ErrorIs(t, err, entity.ErrInvalidCredentials)
-	m.AssertExpectations(t)
 }

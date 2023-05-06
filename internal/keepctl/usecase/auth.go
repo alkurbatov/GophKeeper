@@ -25,9 +25,9 @@ func NewAuthUseCase(
 // Login authenticates a user.
 func (uc *AuthUseCase) Login(
 	ctx context.Context,
-	username, password string,
+	username string,
+	key entity.Key,
 ) (string, error) {
-	key := entity.NewKey(username, password)
 	securityKey := key.Hash()
 
 	token, err := uc.authRepo.Login(ctx, username, securityKey)

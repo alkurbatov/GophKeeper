@@ -2,9 +2,13 @@ package v1
 
 import (
 	"context"
+	"errors"
 
+	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // SecretsServer provides implementation of the Secrets API.
@@ -21,10 +25,35 @@ func NewSecretsServer(secrets usecase.Secrets) *SecretsServer {
 
 // Create creates new secret for a user.
 func (s SecretsServer) Create(
-	context.Context,
-	*goph.CreateSecretRequest,
+	ctx context.Context,
+	req *goph.CreateSecretRequest,
 ) (*goph.CreateSecretResponse, error) {
-	return &goph.CreateSecretResponse{}, nil
+	name := req.GetName()
+	kind := req.GetKind()
+	metadata := req.GetMetadata()
+	data := req.GetData()
+
+	if details, ok := validateSecret(name, metadata, data); !ok {
+		st := composeBadRequestError(details)
+
+		return nil, st.Err()
+	}
+
+	owner := entity.UserFromContext(ctx)
+	if owner == nil {
+		return nil, status.Errorf(codes.Unauthenticated, entity.ErrInvalidCredentials.Error())
+	}
+
+	id, err := s.secretsUseCase.Create(ctx, owner.ID, name, kind, metadata, data)
+	if err != nil {
+		if errors.Is(err, entity.ErrSecretExists) {
+			return nil, status.Errorf(codes.AlreadyExists, entity.ErrSecretExists.Error())
+		}
+
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &goph.CreateSecretResponse{Id: id.String()}, nil
 }
 
 // List retrieves list of the secrets stored a user.

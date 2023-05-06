@@ -16,6 +16,7 @@ import (
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/repo"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -24,7 +25,7 @@ const (
 )
 
 // Run initializes and starts the keeper service.
-func Run(cfg *config.Config) error {
+func Run(cfg *config.Config) error { //nolint:funlen // no sense to split main Run function
 	log, err := logger.New(cfg.LogLevel)
 	if err != nil {
 		return fmt.Errorf("app - Run - logger.New: %w", err)
@@ -41,10 +42,16 @@ func Run(cfg *config.Config) error {
 		return fmt.Errorf("app - Run - postgres.New: %w", err)
 	}
 
-	repos := repo.New(log, pg)
+	repos := repo.New(pg)
 	usecases := usecase.New(cfg, repos)
 
-	grpcSrv, err := grpcserver.New(cfg.Address, cfg.CrtPath, cfg.KeyPath)
+	grpcSrv, err := grpcserver.New(
+		cfg.Address,
+		cfg.CrtPath,
+		cfg.KeyPath,
+		grpc.MaxRecvMsgSize(v1.DefaultMaxMessageSize),
+		grpc.ChainUnaryInterceptor(v1.AuthUnaryInterceptor(cfg.Secret)),
+	)
 	if err != nil {
 		return fmt.Errorf("app - Run - grpcserver.New: %w", err)
 	}

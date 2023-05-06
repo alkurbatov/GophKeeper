@@ -2,8 +2,10 @@ package entity
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/alkurbatov/goph-keeper/internal/libraries/creds"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/satori/go.uuid"
 )
@@ -22,7 +24,7 @@ type Claims struct {
 }
 
 // NewAccessToken issues new access token valid for limited period of time.
-func NewAccessToken(user User, secret Secret) (AccessToken, error) {
+func NewAccessToken(user User, secret creds.Password) (AccessToken, error) {
 	now := time.Now()
 
 	claims := jwt.MapClaims{}
@@ -47,13 +49,21 @@ func NewAccessToken(user User, secret Secret) (AccessToken, error) {
 	return AccessToken(signedToken), nil
 }
 
+// TokenFromString create new AccessToken from provided string.
+// Supports strings in form of "Bearer xxx" or raw tokens.
+func TokenFromString(src string) AccessToken {
+	rawToken := strings.TrimSpace(src)
+
+	return AccessToken(strings.TrimPrefix(rawToken, "Bearer "))
+}
+
 // String converts AccessToken to string.
 func (t AccessToken) String() string {
 	return string(t)
 }
 
 // Decode decodes token, verifies it's signature and return claims if the token is valid.
-func (t AccessToken) Decode(secret Secret) (*Claims, error) {
+func (t AccessToken) Decode(secret creds.Password) (*Claims, error) {
 	claims := new(Claims)
 
 	if _, err := jwt.ParseWithClaims(

@@ -5,13 +5,13 @@ import (
 
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/app"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/config"
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/controller/cmdline/pushcmd"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	cfg       *config.Config
-	clientApp *app.App
+	cfg *config.Config
 
 	verbose  bool
 	address  string
@@ -23,6 +23,7 @@ var (
 		Use:               "keepctl",
 		Short:             "keepctl is an intercative commandline client for the goph-keeper service",
 		PersistentPreRunE: initApp,
+		PersistentPostRun: finalizeApp,
 	}
 )
 
@@ -34,8 +35,7 @@ func Execute(buildVersion, buildDate string) error {
 }
 
 func init() {
-	cobra.OnInitialize(initializeApp)
-	cobra.OnFinalize(finalizeApp)
+	cobra.OnInitialize(initializeConfig)
 
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.PersistentFlags().StringVar(
@@ -56,37 +56,47 @@ func init() {
 	rootCmd.MarkFlagRequired("username")
 	rootCmd.MarkFlagRequired("password")
 
+	viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username"))
+	viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password"))
 	viper.BindPFlag("address", rootCmd.PersistentFlags().Lookup("address"))
 	viper.BindPFlag("ca-path", rootCmd.PersistentFlags().Lookup("ca-path"))
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+
+	rootCmd.AddCommand(pushcmd.PushCmd)
 }
 
-// initializeApp does initialization routine before reading commandline flags.
-func initializeApp() {
+// initializeConfig does initialization routine before reading commandline flags.
+func initializeConfig() {
 	cfg = config.New()
 }
 
-func initApp(cmd *cobra.Command, _ []string) error {
+// initApp does initialization routine before reading commandline flags.
+func initApp(cmd *cobra.Command, args []string) error {
 	// NB (alkurbatov): Prerun is executed for EVERY command, even for noop like help.
 	if cmd.Name() == "help" {
 		return nil
 	}
 
-	var err error
+	cfg := config.New()
 
-	clientApp, err = app.New(cfg)
+	clientApp, err := app.New(cfg)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	cmd.SetContext(clientApp.WithContext(cmd.Context()))
+
+	if cmd.Name() == "register" {
+		return nil
+	}
+
+	return login(cmd, args)
 }
 
 // finalizeApp does cleanup at the end of commandline application.
-func finalizeApp() {
-	if clientApp == nil {
-		return
+func finalizeApp(cmd *cobra.Command, _ []string) {
+	clientApp, err := app.FromContext(cmd.Context())
+	if err == nil {
+		clientApp.Shutdown()
 	}
-
-	clientApp.Shutdown()
 }

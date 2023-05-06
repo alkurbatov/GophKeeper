@@ -2,16 +2,18 @@
 package logger
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // Logger represents logger entity.
 type Logger struct {
-	zerolog.Logger
+	*zerolog.Logger
 }
 
 // New creates new logger entity.
@@ -37,5 +39,10 @@ func New(level string) (*Logger, error) {
 		CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + skipFrameCount).
 		Logger()
 
-	return &Logger{l}, nil
+	return &Logger{&l}, nil
+}
+
+// FromContext extracts logger from the provided context or creates new one.
+func FromContext(ctx context.Context) Logger {
+	return Logger{log.Ctx(ctx)}
 }

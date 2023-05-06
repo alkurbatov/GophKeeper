@@ -12,17 +12,19 @@ import (
 )
 
 func TestRegister(t *testing.T) {
+	key := newTestKey()
+
 	m := &repo.UsersRepoMock{}
 	m.On(
 		"Register",
 		mock.Anything,
 		gophtest.Username,
-		mock.AnythingOfType("string"),
+		key.Hash(),
 	).
 		Return(gophtest.AccessToken, nil)
 
 	sat := usecase.NewUsersUseCase(m)
-	token, err := sat.Register(context.Background(), gophtest.Username, gophtest.Password)
+	token, err := sat.Register(context.Background(), gophtest.Username, key)
 
 	require.NoError(t, err)
 	require.Equal(t, gophtest.AccessToken, token)
@@ -30,17 +32,19 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegisterOnRepoFailure(t *testing.T) {
+	key := newTestKey()
+
 	m := &repo.UsersRepoMock{}
 	m.On(
 		"Register",
 		mock.Anything,
 		gophtest.Username,
-		mock.AnythingOfType("string"),
+		key.Hash(),
 	).
 		Return("", gophtest.ErrUnexpected)
 
 	sat := usecase.NewUsersUseCase(m)
-	_, err := sat.Register(context.Background(), gophtest.Username, gophtest.Password)
+	_, err := sat.Register(context.Background(), gophtest.Username, key)
 
 	require.Error(t, err)
 	m.AssertExpectations(t)

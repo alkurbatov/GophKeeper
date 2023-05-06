@@ -7,7 +7,6 @@ import (
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/logger"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
-	"github.com/rs/zerolog/log"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -15,16 +14,14 @@ var _ Users = (*UsersRepo)(nil)
 
 // UsersRepo is facade to users stored in Postgres.
 type UsersRepo struct {
-	pg  *postgres.Postgres
-	log *logger.Logger
+	pg *postgres.Postgres
 }
 
 // NewUsersRepo creates and initializes UsersRepo object.
 func NewUsersRepo(
 	pg *postgres.Postgres,
-	log *logger.Logger,
 ) *UsersRepo {
-	return &UsersRepo{pg, log}
+	return &UsersRepo{pg}
 }
 
 // Register creates a new user.
@@ -45,7 +42,7 @@ func (r *UsersRepo) Register(
 			}
 		default:
 			if rErr := tx.Rollback(context.Background()); rErr != nil {
-				log.Ctx(ctx).Error().Err(rErr).Msg("UsersRepo - Register - tx.Rollback")
+				logger.FromContext(ctx).Error().Err(rErr).Msg("UsersRepo - Register - tx.Rollback")
 			}
 		}
 	}()

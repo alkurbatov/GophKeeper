@@ -12,17 +12,19 @@ import (
 )
 
 func TestLogin(t *testing.T) {
+	key := newTestKey()
+
 	m := &repo.AuthRepoMock{}
 	m.On(
 		"Login",
 		mock.Anything,
 		gophtest.Username,
-		mock.AnythingOfType("string"),
+		key.Hash(),
 	).
 		Return(gophtest.AccessToken, nil)
 
 	sat := usecase.NewAuthUseCase(m)
-	token, err := sat.Login(context.Background(), gophtest.Username, gophtest.Password)
+	token, err := sat.Login(context.Background(), gophtest.Username, key)
 
 	require.NoError(t, err)
 	require.Equal(t, gophtest.AccessToken, token)
@@ -30,17 +32,19 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginOnRepoFailure(t *testing.T) {
+	key := newTestKey()
+
 	m := &repo.AuthRepoMock{}
 	m.On(
 		"Login",
 		mock.Anything,
 		gophtest.Username,
-		mock.AnythingOfType("string"),
+		key.Hash(),
 	).
 		Return("", gophtest.ErrUnexpected)
 
 	sat := usecase.NewAuthUseCase(m)
-	_, err := sat.Login(context.Background(), gophtest.Username, gophtest.Password)
+	_, err := sat.Login(context.Background(), gophtest.Username, key)
 
 	require.Error(t, err)
 	m.AssertExpectations(t)

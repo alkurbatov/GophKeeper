@@ -6,24 +6,11 @@ import (
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
-	"github.com/alkurbatov/goph-keeper/internal/keeper/repo"
 	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pashagolub/pgxmock/v2"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 )
-
-func newUsersRepo(t *testing.T, m pgxmock.PgxPoolIface) repo.Users {
-	t.Helper()
-
-	pg := &postgres.Postgres{
-		Pool: m,
-	}
-
-	return repo.NewUsersRepo(pg, createTestLogger(t))
-}
 
 func TestRegisterUser(t *testing.T) {
 	expected := uuid.NewV4()
@@ -38,7 +25,7 @@ func TestRegisterUser(t *testing.T) {
 		WillReturnRows(rows)
 	m.ExpectCommit()
 
-	sat := newUsersRepo(t, m)
+	sat := newTestRepos(t, m).Users
 	id, err := sat.Register(context.Background(), gophtest.Username, gophtest.SecurityKey)
 
 	require.NoError(t, err)
@@ -46,36 +33,40 @@ func TestRegisterUser(t *testing.T) {
 	require.NoError(t, m.ExpectationsWereMet())
 }
 
-func TestRegisterUserFailsOnUserExists(t *testing.T) {
-	pErr := &pgconn.PgError{Code: pgerrcode.UniqueViolation}
+func TestRegisterUserOnFailure(t *testing.T) {
+	tt := []struct {
+		name     string
+		err      error
+		expected error
+	}{
+		{
+			name:     "Register user fails if user exists",
+			err:      errUniqueViolation,
+			expected: entity.ErrUserExists,
+		},
+		{
+			name:     "Register user fails on unexpected error",
+			err:      gophtest.ErrUnexpected,
+			expected: gophtest.ErrUnexpected,
+		},
+	}
 
-	m := newPoolMock(t)
-	m.ExpectBeginTx(postgres.DefaultTxOptions)
-	m.ExpectQuery("INSERT INTO users").
-		WithArgs(gophtest.Username, gophtest.SecurityKey).
-		WillReturnError(error(pErr))
-	m.ExpectRollback()
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			m := newPoolMock(t)
+			m.ExpectBeginTx(postgres.DefaultTxOptions)
+			m.ExpectQuery("INSERT INTO users").
+				WithArgs(gophtest.Username, gophtest.SecurityKey).
+				WillReturnError(tc.err)
+			m.ExpectRollback()
 
-	sat := newUsersRepo(t, m)
-	_, err := sat.Register(context.Background(), gophtest.Username, gophtest.SecurityKey)
+			sat := newTestRepos(t, m).Users
+			_, err := sat.Register(context.Background(), gophtest.Username, gophtest.SecurityKey)
 
-	require.ErrorIs(t, err, entity.ErrUserExists)
-	require.NoError(t, m.ExpectationsWereMet())
-}
-
-func TestRegisterUserFailsOnUnknownError(t *testing.T) {
-	m := newPoolMock(t)
-	m.ExpectBeginTx(postgres.DefaultTxOptions)
-	m.ExpectQuery("INSERT INTO users").
-		WithArgs(gophtest.Username, gophtest.SecurityKey).
-		WillReturnError(gophtest.ErrUnexpected)
-	m.ExpectRollback()
-
-	sat := newUsersRepo(t, m)
-	_, err := sat.Register(context.Background(), gophtest.Username, gophtest.SecurityKey)
-
-	require.ErrorIs(t, err, gophtest.ErrUnexpected)
-	require.NoError(t, m.ExpectationsWereMet())
+			require.ErrorIs(t, err, tc.expected)
+			require.NoError(t, m.ExpectationsWereMet())
+		})
+	}
 }
 
 func TestVerifyUser(t *testing.T) {
@@ -92,7 +83,7 @@ func TestVerifyUser(t *testing.T) {
 		WithArgs(gophtest.Username, gophtest.SecurityKey).
 		WillReturnRows(rows)
 
-	sat := newUsersRepo(t, m)
+	sat := newTestRepos(t, m).Users
 	rv, err := sat.Verify(context.Background(), gophtest.Username, gophtest.SecurityKey)
 
 	require.NoError(t, err)
@@ -108,7 +99,7 @@ func TestVerifyFailsOnBadCredentials(t *testing.T) {
 		WithArgs(gophtest.Username, gophtest.SecurityKey).
 		WillReturnRows(rows)
 
-	sat := newUsersRepo(t, m)
+	sat := newTestRepos(t, m).Users
 	_, err := sat.Verify(context.Background(), gophtest.Username, gophtest.SecurityKey)
 
 	require.ErrorIs(t, err, entity.ErrInvalidCredentials)
@@ -121,7 +112,7 @@ func TestVerifyFailsOnUnexpectedError(t *testing.T) {
 		WithArgs(gophtest.Username, gophtest.SecurityKey).
 		WillReturnError(gophtest.ErrUnexpected)
 
-	sat := newUsersRepo(t, m)
+	sat := newTestRepos(t, m).Users
 	_, err := sat.Verify(context.Background(), gophtest.Username, gophtest.SecurityKey)
 
 	require.ErrorIs(t, err, gophtest.ErrUnexpected)

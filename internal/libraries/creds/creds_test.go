@@ -1,13 +1,13 @@
-package entity_test
+package creds_test
 
 import (
 	"testing"
 
-	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
+	"github.com/alkurbatov/goph-keeper/internal/libraries/creds"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
-func TestSecretToString(t *testing.T) {
+func TestPasswordToString(t *testing.T) {
 	tt := []struct {
 		name string
 		data string
@@ -17,20 +17,20 @@ func TestSecretToString(t *testing.T) {
 			data: "1q2w3e",
 		},
 		{
-			name: "Print empty secret",
+			name: "Print empty password",
 			data: "",
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			sat := entity.Secret(tc.data)
+			sat := creds.Password(tc.data)
 			snaps.MatchSnapshot(t, sat.String())
 		})
 	}
 }
 
-func TestSecretURIToString(t *testing.T) {
+func TestConnURIToString(t *testing.T) {
 	tt := []struct {
 		name     string
 		data     string
@@ -48,7 +48,7 @@ func TestSecretURIToString(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			sat := entity.SecretURI(tc.data)
+			sat := creds.ConnURI(tc.data)
 
 			snaps.MatchSnapshot(t, sat.String())
 		})

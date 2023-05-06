@@ -7,6 +7,9 @@ import (
 	"google.golang.org/grpc"
 )
 
+// DefaultMaxMessageSize suggests limit for maximum length of gRPC message.
+const DefaultMaxMessageSize = DefaultDataLimit + DefaultMetadataLimit + 2*DefaultMaxSecretNameLength
+
 // RegisterRoutes injects new routes into the provided gRPC server.
 func RegisterRoutes(server *grpc.Server, useCases *usecase.UseCases) {
 	auth := NewAuthServer(useCases.Auth)

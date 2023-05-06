@@ -6,7 +6,10 @@ import (
 	"testing"
 
 	v1 "github.com/alkurbatov/goph-keeper/internal/keeper/controller/grpc/v1"
+	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
+	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,19 +29,40 @@ func requireEqualCode(t *testing.T, expected codes.Code, err error) {
 
 func newUseCasesMock() usecase.UseCases {
 	return usecase.UseCases{
-		Auth:  &usecase.AuthUseCaseMock{},
-		Users: &usecase.UsersUseCaseMock{},
+		Auth:    &usecase.AuthUseCaseMock{},
+		Secrets: &usecase.SecretsUseCaseMock{},
+		Users:   &usecase.UsersUseCaseMock{},
 	}
+}
+
+func fakeAuthInterceptor(
+	ctx context.Context,
+	req any,
+	_ *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (any, error) {
+	user := entity.User{
+		ID:       uuid.NewV4(),
+		Username: gophtest.Username,
+	}
+
+	return handler(user.WithContext(ctx), req)
 }
 
 func createTestServer(
 	t *testing.T,
 	useCases usecase.UseCases,
+	opts ...grpc.ServerOption,
 ) *grpc.ClientConn {
 	t.Helper()
 	require := require.New(t)
 
-	srv := grpc.NewServer()
+	srvOpts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(v1.DefaultMaxMessageSize),
+	}
+	srvOpts = append(srvOpts, opts...)
+
+	srv := grpc.NewServer(srvOpts...)
 	v1.RegisterRoutes(srv, &useCases)
 
 	lis := bufconn.Listen(1024 * 1024)
@@ -64,4 +88,13 @@ func createTestServer(
 	})
 
 	return conn
+}
+
+func createTestServerWithFakeAuth(
+	t *testing.T,
+	useCases usecase.UseCases,
+) *grpc.ClientConn {
+	t.Helper()
+
+	return createTestServer(t, useCases, grpc.ChainUnaryInterceptor(fakeAuthInterceptor))
 }

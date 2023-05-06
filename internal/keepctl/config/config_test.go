@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/config"
+	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
@@ -15,6 +16,8 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestConfigFromEnv(t *testing.T) {
+	os.Setenv("USERNAME", gophtest.Username)
+	os.Setenv("PASSWORD", string(gophtest.Password))
 	os.Setenv("ADDRESS", "192.168.0.10:8080")
 	os.Setenv("CA_PATH", "/etc/ssl/root.crt")
 	os.Setenv("VERBOSE", "1")

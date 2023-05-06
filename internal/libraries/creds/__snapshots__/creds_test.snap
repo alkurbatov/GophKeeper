@@ -1,0 +1,16 @@
+
+[TestPasswordToString/Print_password - 1]
+******
+---
+
+[TestPasswordToString/Print_empty_password - 1]
+
+---
+
+[TestConnURIToString/Print_database_URI - 1]
+postgres://*****:*****@127.0.0.1:5432/goph?sslmode=disable
+---
+
+[TestConnURIToString/Print_empty_secret - 1]
+
+---

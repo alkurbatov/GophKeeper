@@ -6,18 +6,19 @@ import (
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/repo"
+	"github.com/alkurbatov/goph-keeper/internal/libraries/creds"
 )
 
 var _ Users = (*UsersUseCase)(nil)
 
 // UsersUseCase contains business logic related to users management.
 type UsersUseCase struct {
-	secret    entity.Secret
+	secret    creds.Password
 	usersRepo repo.Users
 }
 
 // NewUsersUseCase create and initializes new UsersUseCase object.
-func NewUsersUseCase(secret entity.Secret, users repo.Users) *UsersUseCase {
+func NewUsersUseCase(secret creds.Password, users repo.Users) *UsersUseCase {
 	return &UsersUseCase{secret, users}
 }
 

@@ -5,13 +5,21 @@ import (
 
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/infra/grpcconn"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	uuid "github.com/satori/go.uuid"
 )
 
 type Auth interface {
 	Login(ctx context.Context, username, securityKey string) (string, error)
 }
 
-type Secrets interface{}
+type Secrets interface {
+	Push(
+		ctx context.Context,
+		token, name string,
+		kind goph.DataKind,
+		description, payload []byte,
+	) (uuid.UUID, error)
+}
 
 type Users interface {
 	Register(ctx context.Context, username, securityKey string) (string, error)

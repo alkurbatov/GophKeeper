@@ -9,7 +9,6 @@ import (
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 func newLoginRequest() *goph.LoginRequest {
@@ -49,7 +48,7 @@ func TestLoginOnOperationFailure(t *testing.T) {
 		newLoginRequest(),
 		mock.Anything,
 	).
-		Return(nil, grpc.ErrServerStopped)
+		Return(nil, gophtest.ErrUnexpected)
 
 	sat := repo.NewAuthRepo(m)
 	_, err := sat.Login(context.Background(), gophtest.Username, gophtest.SecurityKey)

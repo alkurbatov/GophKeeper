@@ -23,9 +23,9 @@ func NewUsersUseCase(users repo.Users) *UsersUseCase {
 // Register creates a new user.
 func (uc *UsersUseCase) Register(
 	ctx context.Context,
-	username, password string,
+	username string,
+	key entity.Key,
 ) (string, error) {
-	key := entity.NewKey(username, password)
 	securityKey := key.Hash()
 
 	accessToken, err := uc.usersRepo.Register(ctx, username, securityKey)

@@ -6,13 +6,23 @@ import (
 	"github.com/alkurbatov/goph-keeper/internal/keeper/config"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/repo"
+	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	uuid "github.com/satori/go.uuid"
 )
 
 type Auth interface {
 	Login(ctx context.Context, username, securityKey string) (entity.AccessToken, error)
 }
 
-type Secrets interface{}
+type Secrets interface {
+	Create(
+		ctx context.Context,
+		owner uuid.UUID,
+		name string,
+		kind goph.DataKind,
+		metadata, data []byte,
+	) (uuid.UUID, error)
+}
 
 type Users interface {
 	Register(ctx context.Context, username, securityKey string) (entity.AccessToken, error)

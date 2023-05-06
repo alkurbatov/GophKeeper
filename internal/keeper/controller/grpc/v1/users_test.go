@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	v1 "github.com/alkurbatov/goph-keeper/internal/keeper/controller/grpc/v1"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
@@ -15,28 +16,46 @@ import (
 )
 
 func TestRegisterUser(t *testing.T) {
-	m := newUseCasesMock()
-	m.Users.(*usecase.UsersUseCaseMock).On(
-		"Register",
-		mock.Anything,
-		gophtest.Username,
-		gophtest.SecurityKey,
-	).
-		Return(entity.AccessToken(gophtest.AccessToken), nil)
-
-	conn := createTestServer(t, m)
-
-	req := &goph.RegisterUserRequest{
-		Username:    gophtest.Username,
-		SecurityKey: gophtest.SecurityKey,
+	tt := []struct {
+		name     string
+		userName string
+	}{
+		{
+			name:     "Register user",
+			userName: gophtest.Username,
+		},
+		{
+			name:     "Register user with long name",
+			userName: strings.Repeat("#", v1.DefaultMaxUsernameLength),
+		},
 	}
 
-	client := goph.NewUsersClient(conn)
-	resp, err := client.Register(context.Background(), req)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			m := newUseCasesMock()
+			m.Users.(*usecase.UsersUseCaseMock).On(
+				"Register",
+				mock.Anything,
+				tc.userName,
+				gophtest.SecurityKey,
+			).
+				Return(entity.AccessToken(gophtest.AccessToken), nil)
 
-	require.NoError(t, err)
-	require.Equal(t, gophtest.AccessToken, resp.GetAccessToken())
-	m.Users.(*usecase.UsersUseCaseMock).AssertExpectations(t)
+			conn := createTestServer(t, m)
+
+			req := &goph.RegisterUserRequest{
+				Username:    tc.userName,
+				SecurityKey: gophtest.SecurityKey,
+			}
+
+			client := goph.NewUsersClient(conn)
+			resp, err := client.Register(context.Background(), req)
+
+			require.NoError(t, err)
+			require.Equal(t, gophtest.AccessToken, resp.GetAccessToken())
+			m.Users.(*usecase.UsersUseCaseMock).AssertExpectations(t)
+		})
+	}
 }
 
 func TestRegisterUserWithBadRequest(t *testing.T) {
@@ -57,7 +76,7 @@ func TestRegisterUserWithBadRequest(t *testing.T) {
 		},
 		{
 			name:     "Register user fails if username is too long",
-			username: strings.Repeat("#", 129),
+			username: strings.Repeat("#", v1.DefaultMaxUsernameLength+1),
 			key:      gophtest.SecurityKey,
 		},
 	}
