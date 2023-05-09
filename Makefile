@@ -33,7 +33,7 @@ download: ## Download go.mod dependencies
 	go mod download
 
 .PHONY: run
-run: ## Run the project in docker compose
+run: stop ## Run the project in docker compose
 	docker compose -f deployments/docker-compose.yaml up -d --build
 
 .PHONY: stop
