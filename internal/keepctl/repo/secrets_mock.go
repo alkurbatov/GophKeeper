@@ -33,3 +33,13 @@ func (m *SecretsRepoMock) List(
 
 	return args.Get(0).([]*goph.Secret), args.Error(1)
 }
+
+func (m *SecretsRepoMock) Delete(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+) error {
+	args := m.Called(ctx, token, id)
+
+	return args.Error(0)
+}

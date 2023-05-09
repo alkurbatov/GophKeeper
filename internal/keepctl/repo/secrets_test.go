@@ -77,6 +77,29 @@ func doListSecrets(
 	return rv, err
 }
 
+func doDeleteSecret(t *testing.T, mockErr error) error {
+	t.Helper()
+
+	id := uuid.NewV4()
+	req := &goph.DeleteSecretRequest{Id: id.String()}
+
+	m := &goph.SecretsClientMock{}
+	m.On(
+		"Delete",
+		mock.Anything,
+		req,
+		mock.Anything,
+	).
+		Return(&goph.DeleteSecretResponse{}, mockErr)
+
+	sat := repo.NewSecretsRepo(m)
+	err := sat.Delete(context.Background(), gophtest.AccessToken, id)
+
+	m.AssertExpectations(t)
+
+	return err
+}
+
 func TestCreateSecret(t *testing.T) {
 	expected := uuid.NewV4()
 	resp := &goph.CreateSecretResponse{
@@ -133,6 +156,18 @@ func TestListSecrets(t *testing.T) {
 
 func TestListSecretsOnOperationFailure(t *testing.T) {
 	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestDeleteSecret(t *testing.T) {
+	err := doDeleteSecret(t, nil)
+
+	require.NoError(t, err)
+}
+
+func TestDeleteSecretOnOperationFailure(t *testing.T) {
+	err := doDeleteSecret(t, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }

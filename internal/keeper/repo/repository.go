@@ -21,6 +21,7 @@ type Secrets interface {
 	) (uuid.UUID, error)
 
 	List(ctx context.Context, owner uuid.UUID) ([]entity.Secret, error)
+	Delete(ctx context.Context, owner, id uuid.UUID) error
 }
 
 type Users interface {

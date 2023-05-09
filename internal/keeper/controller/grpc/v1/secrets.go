@@ -7,6 +7,7 @@ import (
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -100,10 +101,28 @@ func (s SecretsServer) Update(
 	return &goph.UpdateSecretResponse{}, nil
 }
 
-// Delete remove particular secret stored by a user.
+// Delete removes particular secret stored by a user.
 func (s SecretsServer) Delete(
-	context.Context,
-	*goph.DeleteSecretRequest,
+	ctx context.Context,
+	req *goph.DeleteSecretRequest,
 ) (*goph.DeleteSecretResponse, error) {
+	owner := entity.UserFromContext(ctx)
+	if owner == nil {
+		return nil, status.Errorf(codes.Unauthenticated, entity.ErrInvalidCredentials.Error())
+	}
+
+	id, err := uuid.FromString(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	if err := s.secretsUseCase.Delete(ctx, owner.ID, id); err != nil {
+		if errors.Is(err, entity.ErrSecretNotFound) {
+			return nil, status.Errorf(codes.NotFound, entity.ErrSecretNotFound.Error())
+		}
+
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	return &goph.DeleteSecretResponse{}, nil
 }

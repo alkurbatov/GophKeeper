@@ -54,7 +54,7 @@ func (r *SecretsRepo) Push(
 	return id, nil
 }
 
-// List returns list of  user's secrets.
+// List returns list of user's secrets.
 func (r *SecretsRepo) List(
 	ctx context.Context,
 	token string,
@@ -70,4 +70,22 @@ func (r *SecretsRepo) List(
 	}
 
 	return resp.Secrets, nil
+}
+
+// Delete removes user's secret.
+func (r *SecretsRepo) Delete(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+) error {
+	md := metadata.New(map[string]string{"authorization": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	req := &goph.DeleteSecretRequest{Id: id.String()}
+
+	if _, err := r.client.Delete(ctx, req); err != nil {
+		return fmt.Errorf("SecretsRepo - Delete - r.client.Delete: %w", entity.NewRequestError(err))
+	}
+
+	return nil
 }

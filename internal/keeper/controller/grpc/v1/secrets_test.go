@@ -43,6 +43,32 @@ func doListSecrets(
 	return rv, err
 }
 
+func doDeleteSecret(
+	t *testing.T,
+	mockErr error,
+) (*goph.DeleteSecretResponse, error) {
+	t.Helper()
+
+	m := newUseCasesMock()
+	m.Secrets.(*usecase.SecretsUseCaseMock).On(
+		"Delete",
+		mock.Anything,
+		mock.AnythingOfType("uuid.UUID"),
+		mock.AnythingOfType("uuid.UUID"),
+	).
+		Return(mockErr)
+
+	conn := createTestServerWithFakeAuth(t, m)
+	req := &goph.DeleteSecretRequest{Id: uuid.NewV4().String()}
+
+	client := goph.NewSecretsClient(conn)
+	rv, err := client.Delete(context.Background(), req)
+
+	m.Secrets.(*usecase.SecretsUseCaseMock).AssertExpectations(t)
+
+	return rv, err
+}
+
 func TestCreateSecret(t *testing.T) {
 	tt := []struct {
 		name       string
@@ -279,6 +305,40 @@ func TestListSecretsFailsIfNoUserInfo(t *testing.T) {
 
 func TestListSecretsFailsOnUseCaseFailure(t *testing.T) {
 	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+
+	requireEqualCode(t, codes.Internal, err)
+}
+
+func TestDeleteSecret(t *testing.T) {
+	_, err := doDeleteSecret(t, nil)
+
+	require.NoError(t, err)
+}
+
+func TestDeleteSecretOnBadRequest(t *testing.T) {
+	conn := createTestServerWithFakeAuth(t, newUseCasesMock())
+
+	req := &goph.DeleteSecretRequest{Id: "xxx"}
+
+	client := goph.NewSecretsClient(conn)
+	_, err := client.Delete(context.Background(), req)
+
+	requireEqualCode(t, codes.InvalidArgument, err)
+}
+
+func TestDeleteSecretFailsIfNoUserInfo(t *testing.T) {
+	conn := createTestServer(t, newUseCasesMock())
+
+	req := &goph.DeleteSecretRequest{Id: uuid.NewV4().String()}
+
+	client := goph.NewSecretsClient(conn)
+	_, err := client.Delete(context.Background(), req)
+
+	requireEqualCode(t, codes.Unauthenticated, err)
+}
+
+func TestDeleteSecretFailsOnUseCaseFailure(t *testing.T) {
+	_, err := doDeleteSecret(t, gophtest.ErrUnexpected)
 
 	requireEqualCode(t, codes.Internal, err)
 }

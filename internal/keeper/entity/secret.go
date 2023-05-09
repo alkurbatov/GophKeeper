@@ -7,7 +7,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-var ErrSecretExists = errors.New("secret already exists")
+var (
+	ErrSecretNotFound = errors.New("secret not found")
+	ErrSecretExists   = errors.New("secret already exists")
+)
 
 type Secret struct {
 	ID       uuid.UUID `db:"secret_id"`

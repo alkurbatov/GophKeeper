@@ -43,7 +43,7 @@ func doPushText(t *testing.T, mockRV uuid.UUID, mockErr error) (uuid.UUID, error
 	return id, err
 }
 
-func doListText(t *testing.T, mockRV []*goph.Secret, mockErr error) ([]*goph.Secret, error) {
+func doList(t *testing.T, mockRV []*goph.Secret, mockErr error) ([]*goph.Secret, error) {
 	t.Helper()
 
 	m := &repo.SecretsRepoMock{}
@@ -63,6 +63,32 @@ func doListText(t *testing.T, mockRV []*goph.Secret, mockErr error) ([]*goph.Sec
 	m.AssertExpectations(t)
 
 	return data, err
+}
+
+func doDelete(t *testing.T, mockErr error) error {
+	t.Helper()
+
+	id := uuid.NewV4()
+
+	m := &repo.SecretsRepoMock{}
+	m.On(
+		"Delete",
+		mock.Anything,
+		gophtest.AccessToken,
+		id,
+	).
+		Return(mockErr)
+
+	sat := usecase.NewSecretsUseCase(newTestKey(), m)
+	err := sat.Delete(
+		context.Background(),
+		gophtest.AccessToken,
+		id,
+	)
+
+	m.AssertExpectations(t)
+
+	return err
 }
 
 func TestPushSecret(t *testing.T) {
@@ -128,7 +154,7 @@ func TestListSecrets(t *testing.T) {
 				)
 			}
 
-			rv, err := doListText(t, mockRV, nil)
+			rv, err := doList(t, mockRV, nil)
 
 			require.NoError(t, err)
 			snaps.MatchSnapshot(t, rv)
@@ -146,13 +172,25 @@ func TestListSecretsOnDecryptFailure(t *testing.T) {
 		},
 	}
 
-	_, err := doListText(t, secrets, nil)
+	_, err := doList(t, secrets, nil)
 
 	require.Error(t, err)
 }
 
 func TestListSecretsOnRepoFailure(t *testing.T) {
-	_, err := doListText(t, nil, gophtest.ErrUnexpected)
+	_, err := doList(t, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestDeleteSecret(t *testing.T) {
+	err := doDelete(t, nil)
+
+	require.NoError(t, err)
+}
+
+func TestDeleteSecretOnRepoFailure(t *testing.T) {
+	err := doDelete(t, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }

@@ -69,6 +69,7 @@ func (uc *SecretsUseCase) PushText(
 	return uc.push(ctx, token, name, data, description)
 }
 
+// List returns list of user's secrets.
 func (uc *SecretsUseCase) List(ctx context.Context, token string) ([]*goph.Secret, error) {
 	data, err := uc.secretsRepo.List(ctx, token)
 	if err != nil {
@@ -85,4 +86,17 @@ func (uc *SecretsUseCase) List(ctx context.Context, token string) ([]*goph.Secre
 	}
 
 	return data, nil
+}
+
+// Delete removes user's secret.
+func (uc *SecretsUseCase) Delete(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+) error {
+	if err := uc.secretsRepo.Delete(ctx, token, id); err != nil {
+		return fmt.Errorf("SecretsUseCase - Delete - uc.secretsRepo.Delete: %w", err)
+	}
+
+	return nil
 }

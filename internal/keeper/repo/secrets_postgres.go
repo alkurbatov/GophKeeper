@@ -30,9 +30,7 @@ func (r *SecretsRepo) Create(
 	name string,
 	kind goph.DataKind,
 	metadata, data []byte,
-) (uuid.UUID, error) {
-	var id uuid.UUID
-
+) (id uuid.UUID, err error) {
 	tx, err := r.pg.BeginTx(ctx)
 	if err != nil {
 		return id, fmt.Errorf("SecretsRepo - Create - r.pg.BeginTx: %w", err)
@@ -93,4 +91,45 @@ func (r *SecretsRepo) List(
 	}
 
 	return rv, nil
+}
+
+// Delete removes secret from database.
+func (r *SecretsRepo) Delete(
+	ctx context.Context,
+	owner, id uuid.UUID,
+) (err error) {
+	tx, err := r.pg.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("SecretsRepo - Delete - r.pg.BeginTx: %w", err)
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			if cErr := tx.Commit(context.Background()); cErr != nil {
+				err = fmt.Errorf("SecretsRepo - Delete - tx.Commit: %w", cErr)
+			}
+		default:
+			if rErr := tx.Rollback(context.Background()); rErr != nil {
+				logger.FromContext(ctx).Error().Err(rErr).Msg("SecretsRepo - Delete - tx.Rollback")
+			}
+		}
+	}()
+
+	tag, err := tx.Exec(
+		ctx,
+		`DELETE FROM secrets
+     WHERE secret_id = $1 AND owner_id = $2`,
+		id.String(),
+		owner.String(),
+	)
+	if err != nil {
+		return fmt.Errorf("SecrtsRepo - Delete - tx.Exec: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return entity.ErrSecretNotFound
+	}
+
+	return nil
 }

@@ -21,6 +21,7 @@ type Secrets interface {
 	) (uuid.UUID, error)
 
 	List(ctx context.Context, token string) ([]*goph.Secret, error)
+	Delete(ctx context.Context, token string, id uuid.UUID) error
 }
 
 type Users interface {

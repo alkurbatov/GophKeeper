@@ -22,6 +22,7 @@ func NewSecretsUseCase(secrets repo.Secrets) *SecretsUseCase {
 	return &SecretsUseCase{secrets}
 }
 
+// Create creates new secret.
 func (uc *SecretsUseCase) Create(
 	ctx context.Context,
 	owner uuid.UUID,
@@ -37,6 +38,7 @@ func (uc *SecretsUseCase) Create(
 	return id, nil
 }
 
+// List returns list of user's secrets.
 func (uc *SecretsUseCase) List(
 	ctx context.Context,
 	owner uuid.UUID,
@@ -47,4 +49,16 @@ func (uc *SecretsUseCase) List(
 	}
 
 	return secrets, nil
+}
+
+// Delete removes secret owned by user.
+func (uc *SecretsUseCase) Delete(
+	ctx context.Context,
+	owner, id uuid.UUID,
+) error {
+	if err := uc.secretsRepo.Delete(ctx, owner, id); err != nil {
+		return fmt.Errorf("SecretsUseCase - Delete - uc.secretsRepo.Delete: %w", err)
+	}
+
+	return nil
 }
