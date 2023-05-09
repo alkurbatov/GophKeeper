@@ -59,7 +59,7 @@ func (r *SecretsRepo) Create(
          RETURNING secret_id`,
 		owner,
 		name,
-		kind.String(),
+		kind,
 		metadata,
 		data,
 	).Scan(&id)
@@ -72,4 +72,25 @@ func (r *SecretsRepo) Create(
 	}
 
 	return id, nil
+}
+
+// List returns all secrets of the provided user.
+func (r *SecretsRepo) List(
+	ctx context.Context,
+	owner uuid.UUID,
+) ([]entity.Secret, error) {
+	rv := make([]entity.Secret, 0)
+	if err := r.pg.Select(
+		ctx,
+		&rv,
+		`SELECT
+         secret_id, name, kind, metadata
+     FROM secrets
+     WHERE owner_id = $1`,
+		owner.String(),
+	); err != nil {
+		return nil, fmt.Errorf("SecretsRepo - List - r.Select: %w", err)
+	}
+
+	return rv, nil
 }

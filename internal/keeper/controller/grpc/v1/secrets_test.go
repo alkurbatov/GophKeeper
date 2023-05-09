@@ -10,11 +10,38 @@ import (
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	"github.com/gkampitakis/go-snaps/snaps"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 )
+
+func doListSecrets(
+	t *testing.T,
+	mockRV []entity.Secret,
+	mockErr error,
+) (*goph.ListSecretsResponse, error) {
+	t.Helper()
+
+	m := newUseCasesMock()
+	m.Secrets.(*usecase.SecretsUseCaseMock).On(
+		"List",
+		mock.Anything,
+		mock.AnythingOfType("uuid.UUID"),
+	).
+		Return(mockRV, mockErr)
+
+	conn := createTestServerWithFakeAuth(t, m)
+	req := &goph.ListSecretsRequest{}
+
+	client := goph.NewSecretsClient(conn)
+	rv, err := client.List(context.Background(), req)
+
+	m.Secrets.(*usecase.SecretsUseCaseMock).AssertExpectations(t)
+
+	return rv, err
+}
 
 func TestCreateSecret(t *testing.T) {
 	tt := []struct {
@@ -200,4 +227,58 @@ func TestCreateServerOnUseCaseFailure(t *testing.T) {
 			m.Secrets.(*usecase.SecretsUseCaseMock).AssertExpectations(t)
 		})
 	}
+}
+
+func TestListSecrets(t *testing.T) {
+	tt := []struct {
+		name    string
+		secrets []entity.Secret
+	}{
+		{
+			name: "List secrets of a user",
+			secrets: []entity.Secret{
+				{
+					ID:   gophtest.CreateUUID(t, "7728154c-9400-4f1b-a2a3-01deb83ece05"),
+					Name: gophtest.SecretName,
+					Kind: goph.DataKind_BINARY,
+				},
+				{
+					ID:       gophtest.CreateUUID(t, "df566e25-43a5-4c34-9123-3931fb809b45"),
+					Name:     gophtest.SecretName + "ex",
+					Kind:     goph.DataKind_TEXT,
+					Metadata: []byte(gophtest.Metadata),
+				},
+			},
+		},
+		{
+			name:    "List secrets when user has no secrets",
+			secrets: []entity.Secret{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			rv, err := doListSecrets(t, tc.secrets, nil)
+
+			require.NoError(t, err)
+			snaps.MatchSnapshot(t, rv.GetSecrets())
+		})
+	}
+}
+
+func TestListSecretsFailsIfNoUserInfo(t *testing.T) {
+	conn := createTestServer(t, newUseCasesMock())
+
+	req := &goph.ListSecretsRequest{}
+
+	client := goph.NewSecretsClient(conn)
+	_, err := client.List(context.Background(), req)
+
+	requireEqualCode(t, codes.Unauthenticated, err)
+}
+
+func TestListSecretsFailsOnUseCaseFailure(t *testing.T) {
+	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+
+	requireEqualCode(t, codes.Internal, err)
 }

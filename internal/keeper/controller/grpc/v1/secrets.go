@@ -58,10 +58,30 @@ func (s SecretsServer) Create(
 
 // List retrieves list of the secrets stored a user.
 func (s SecretsServer) List(
-	context.Context,
-	*goph.ListSecretsRequest,
+	ctx context.Context,
+	_ *goph.ListSecretsRequest,
 ) (*goph.ListSecretsResponse, error) {
-	return &goph.ListSecretsResponse{}, nil
+	owner := entity.UserFromContext(ctx)
+	if owner == nil {
+		return nil, status.Errorf(codes.Unauthenticated, entity.ErrInvalidCredentials.Error())
+	}
+
+	data, err := s.secretsUseCase.List(ctx, owner.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	rv := make([]*goph.Secret, 0, len(data))
+	for _, val := range data {
+		rv = append(rv, &goph.Secret{
+			Id:       val.ID.String(),
+			Name:     val.Name,
+			Kind:     val.Kind,
+			Metadata: val.Metadata,
+		})
+	}
+
+	return &goph.ListSecretsResponse{Secrets: rv}, nil
 }
 
 // Get returns particular secret stored by a user.

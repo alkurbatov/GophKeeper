@@ -3,6 +3,8 @@ module github.com/alkurbatov/goph-keeper
 go 1.20
 
 require (
+	github.com/cheynewallace/tabby v1.1.1
+	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/gkampitakis/go-snaps v0.4.2
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa

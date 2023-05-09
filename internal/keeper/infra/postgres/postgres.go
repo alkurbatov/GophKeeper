@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/logger"
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -22,6 +23,7 @@ var DefaultTxOptions = pgx.TxOptions{
 type PgxIface interface {
 	Acquire(ctx context.Context) (*pgxpool.Conn, error)
 
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 
 	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
@@ -77,4 +79,14 @@ func (p *Postgres) BeginTx(ctx context.Context) (pgx.Tx, error) {
 	}
 
 	return tx, nil
+}
+
+// Select returns rows matching query.
+func (p *Postgres) Select(
+	ctx context.Context,
+	dst interface{},
+	query string,
+	args ...interface{},
+) error {
+	return pgxscan.Select(ctx, p.Pool, dst, query, args...)
 }

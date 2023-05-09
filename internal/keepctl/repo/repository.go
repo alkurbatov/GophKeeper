@@ -19,6 +19,8 @@ type Secrets interface {
 		kind goph.DataKind,
 		description, payload []byte,
 	) (uuid.UUID, error)
+
+	List(ctx context.Context, token string) ([]*goph.Secret, error)
 }
 
 type Users interface {

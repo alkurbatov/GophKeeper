@@ -24,3 +24,12 @@ func (m *SecretsRepoMock) Push(
 
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }
+
+func (m *SecretsRepoMock) List(
+	ctx context.Context,
+	token string,
+) ([]*goph.Secret, error) {
+	args := m.Called(ctx, token)
+
+	return args.Get(0).([]*goph.Secret), args.Error(1)
+}

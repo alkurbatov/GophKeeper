@@ -21,30 +21,38 @@ func TestEncryptDecrypt(t *testing.T) {
 		name     string
 		username string
 		password creds.Password
+		msg      []byte
 	}{
 		{
 			name:     "Basic key",
 			username: gophtest.Username,
 			password: gophtest.Password,
+			msg:      []byte("TestEncryptDecrypt"),
 		},
 		{
 			name:     "Short key",
 			username: "a",
 			password: "b",
+			msg:      []byte("TestEncryptDecrypt"),
+		},
+		{
+			name:     "Empty message is noop",
+			username: gophtest.Username,
+			password: gophtest.Password,
+			msg:      []byte{},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			msg := []byte("TestEncryptDecrypt")
 			sat := entity.NewKey(gophtest.Username, gophtest.Password)
 
-			encrypted, err := sat.Encrypt(msg)
+			encrypted, err := sat.Encrypt(tc.msg)
 			require.NoError(t, err)
 
 			decrypted, err := sat.Decrypt(encrypted)
 			require.NoError(t, err)
-			require.Equal(t, msg, decrypted)
+			require.Equal(t, tc.msg, decrypted)
 		})
 	}
 }

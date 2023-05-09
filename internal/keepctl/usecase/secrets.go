@@ -68,3 +68,21 @@ func (uc *SecretsUseCase) PushText(
 
 	return uc.push(ctx, token, name, data, description)
 }
+
+func (uc *SecretsUseCase) List(ctx context.Context, token string) ([]*goph.Secret, error) {
+	data, err := uc.secretsRepo.List(ctx, token)
+	if err != nil {
+		return nil, fmt.Errorf("SecretsUseCase - List - uc.secretsRepo.List: %w", err)
+	}
+
+	for i, val := range data {
+		decrypted, err := uc.key.Decrypt(val.GetMetadata())
+		if err != nil {
+			return nil, fmt.Errorf("SecretsUseCase - List - uc.key.Decrypt: %w", err)
+		}
+
+		data[i].Metadata = decrypted
+	}
+
+	return data, nil
+}

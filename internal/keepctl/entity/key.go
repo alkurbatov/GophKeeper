@@ -35,7 +35,12 @@ func (k Key) Hash() string {
 }
 
 // Encrypt encrypts provided message with secret key.
+// Noop if data is empty.
 func (k Key) Encrypt(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return data, nil
+	}
+
 	aesblock, err := aes.NewCipher(k.sum[:])
 	if err != nil {
 		return nil, fmt.Errorf("Key - Encrypt - aes.NewCipher: %w", err)
@@ -57,7 +62,12 @@ func (k Key) Encrypt(data []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts provided bytes.
+// Noop if data is empty.
 func (k Key) Decrypt(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return data, nil
+	}
+
 	aesblock, err := aes.NewCipher(k.sum[:])
 	if err != nil {
 		return nil, fmt.Errorf("Key - Decrypt - aes.NewCipher: %w", err)

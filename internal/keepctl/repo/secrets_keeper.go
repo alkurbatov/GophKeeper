@@ -22,6 +22,7 @@ func NewSecretsRepo(client goph.SecretsClient) *SecretsRepo {
 	return &SecretsRepo{client}
 }
 
+// Push send new secret data to the server.
 func (r *SecretsRepo) Push(
 	ctx context.Context,
 	token, name string,
@@ -51,4 +52,22 @@ func (r *SecretsRepo) Push(
 	}
 
 	return id, nil
+}
+
+// List returns list of  user's secrets.
+func (r *SecretsRepo) List(
+	ctx context.Context,
+	token string,
+) ([]*goph.Secret, error) {
+	md := metadata.New(map[string]string{"authorization": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	req := &goph.ListSecretsRequest{}
+
+	resp, err := r.client.List(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("SecretsRepo - List - r.client.List: %w", entity.NewRequestError(err))
+	}
+
+	return resp.Secrets, nil
 }

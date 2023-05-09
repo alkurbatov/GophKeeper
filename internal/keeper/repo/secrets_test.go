@@ -26,7 +26,7 @@ func TestCreateSecret(t *testing.T) {
 		WithArgs(
 			owner,
 			gophtest.SecretName,
-			goph.DataKind_TEXT.String(),
+			goph.DataKind_TEXT,
 			[]byte(gophtest.Metadata),
 			[]byte(gophtest.TextData),
 		).
@@ -76,7 +76,7 @@ func TestCreateSecretFailure(t *testing.T) {
 				WithArgs(
 					owner,
 					gophtest.SecretName,
-					goph.DataKind_TEXT.String(),
+					goph.DataKind_TEXT,
 					[]byte(gophtest.Metadata),
 					[]byte(gophtest.TextData),
 				).
@@ -97,4 +97,61 @@ func TestCreateSecretFailure(t *testing.T) {
 			require.NoError(t, m.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestListSecrets(t *testing.T) {
+	tt := []struct {
+		name string
+		rows [][]any
+	}{
+		{
+			name: "List secrets of a user",
+			rows: [][]any{
+				{uuid.NewV4().String(), gophtest.SecretName, goph.DataKind_TEXT, []byte("xxx")},
+				{uuid.NewV4().String(), gophtest.SecretName + "ex", goph.DataKind_BINARY, []byte{}},
+			},
+		},
+		{
+			name: "List secrets returns empty list",
+			rows: [][]any{},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			owner := uuid.NewV4()
+			rows := pgxmock.NewRows([]string{"secret_id", "name", "kind", "metadata"})
+
+			for _, row := range tc.rows {
+				rows.AddRow(row...)
+			}
+
+			m := newPoolMock(t)
+			m.ExpectQuery("SELECT secret_id, name, kind, metadata FROM secrets").
+				WithArgs(owner.String()).
+				WillReturnRows(rows)
+
+			sat := newTestRepos(t, m).Secrets
+			secrets, err := sat.List(context.Background(), owner)
+
+			require.NoError(t, err)
+			require.Len(t, secrets, len(tc.rows))
+			require.NoError(t, m.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestListSecretsOnFailure(t *testing.T) {
+	owner := uuid.NewV4()
+
+	m := newPoolMock(t)
+	m.ExpectQuery("SELECT secret_id, name, kind, metadata FROM secrets").
+		WithArgs(owner.String()).
+		WillReturnError(gophtest.ErrUnexpected)
+
+	sat := newTestRepos(t, m).Secrets
+	_, err := sat.List(context.Background(), owner)
+
+	require.Error(t, err)
+	require.NoError(t, m.ExpectationsWereMet())
 }

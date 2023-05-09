@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/repo"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	uuid "github.com/satori/go.uuid"
@@ -34,4 +35,16 @@ func (uc *SecretsUseCase) Create(
 	}
 
 	return id, nil
+}
+
+func (uc *SecretsUseCase) List(
+	ctx context.Context,
+	owner uuid.UUID,
+) ([]entity.Secret, error) {
+	secrets, err := uc.secretsRepo.List(ctx, owner)
+	if err != nil {
+		return nil, fmt.Errorf("SecretsUseCase - List - uc.secretsRepo.List: %w", err)
+	}
+
+	return secrets, nil
 }

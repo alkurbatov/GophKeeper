@@ -19,6 +19,8 @@ type Secrets interface {
 		kind goph.DataKind,
 		metadata, data []byte,
 	) (uuid.UUID, error)
+
+	List(ctx context.Context, owner uuid.UUID) ([]entity.Secret, error)
 }
 
 type Users interface {

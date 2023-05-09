@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 
+	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
@@ -24,4 +25,13 @@ func (m *SecretsRepoMock) Create(
 	args := m.Called(ctx, owner, name, kind, metadata, data)
 
 	return args.Get(0).(uuid.UUID), args.Error(1)
+}
+
+func (m *SecretsRepoMock) List(
+	ctx context.Context,
+	owner uuid.UUID,
+) ([]entity.Secret, error) {
+	args := m.Called(ctx, owner)
+
+	return args.Get(0).([]entity.Secret), args.Error(1)
 }

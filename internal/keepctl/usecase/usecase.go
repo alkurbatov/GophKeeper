@@ -5,6 +5,7 @@ import (
 
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -14,6 +15,7 @@ type Auth interface {
 
 type Secrets interface {
 	PushText(ctx context.Context, token, name, text, description string) (uuid.UUID, error)
+	List(ctx context.Context, token string) ([]*goph.Secret, error)
 }
 
 type Users interface {
