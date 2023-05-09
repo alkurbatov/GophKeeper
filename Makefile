@@ -27,6 +27,9 @@ keeper:
 keepctl:
 	./scripts/build-client $(CLIENT_VERSION)
 
+.PHONY: all ## Build whole product.
+all: keeper keepctl
+
 .PHONY: download
 download: ## Download go.mod dependencies
 	echo Downloading go.mod dependencies
