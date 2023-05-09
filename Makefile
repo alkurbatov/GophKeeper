@@ -66,3 +66,7 @@ test: ## Run unit tests
 	@cat coverage.out.tmp | grep -v -E "(_mock|.pb).go" > coverage.out
 	@go tool cover -html=coverage.out -o coverage.html
 	@go tool cover -func=coverage.out
+
+.PHONY: update-snapshots
+update-snapshots: ## Update unit-tests's snapshots
+	@UPDATE_SNAPS=true go test -v -race ./... -coverprofile=coverage.out.tmp -covermode atomic

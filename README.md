@@ -120,6 +120,12 @@
     migrate -database ${DATABASE_DSN} -path ./migrations down -all
     ```
 
+### Юнит-тестирование
+Для обновления снапшотов, использующихся в юнит тестах, выполните команду:
+```bash
+make update-snapshots
+```
+
 ## Лицензия
 Copyright (c) 2023 Alexander Kurbatov
 
