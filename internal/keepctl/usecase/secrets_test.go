@@ -65,6 +65,37 @@ func doList(t *testing.T, mockRV []*goph.Secret, mockErr error) ([]*goph.Secret,
 	return data, err
 }
 
+func doGetSecret(
+	t *testing.T,
+	mockSecret *goph.Secret,
+	mockData []byte,
+	mockErr error,
+) (*goph.Secret, []byte, error) {
+	t.Helper()
+
+	id := uuid.NewV4()
+
+	m := &repo.SecretsRepoMock{}
+	m.On(
+		"Get",
+		mock.Anything,
+		gophtest.AccessToken,
+		id,
+	).
+		Return(mockSecret, mockData, mockErr)
+
+	sat := usecase.NewSecretsUseCase(newTestKey(), m)
+	secret, data, err := sat.Get(
+		context.Background(),
+		gophtest.AccessToken,
+		id,
+	)
+
+	m.AssertExpectations(t)
+
+	return secret, data, err
+}
+
 func doDelete(t *testing.T, mockErr error) error {
 	t.Helper()
 
@@ -179,6 +210,104 @@ func TestListSecretsOnDecryptFailure(t *testing.T) {
 
 func TestListSecretsOnRepoFailure(t *testing.T) {
 	_, err := doList(t, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestGetSecret(t *testing.T) {
+	tt := []struct {
+		name   string
+		secret *goph.Secret
+		data   []byte
+	}{
+		{
+			name: "Get secret text secret",
+			secret: &goph.Secret{
+				Id:       gophtest.CreateUUID(t, "df566e25-43a5-4c34-9123-3931fb809b45").String(),
+				Name:     gophtest.SecretName,
+				Kind:     goph.DataKind_TEXT,
+				Metadata: []byte(gophtest.Metadata),
+			},
+			data: []byte(gophtest.TextData),
+		},
+		{
+			name: "Get secret without metadata",
+			secret: &goph.Secret{
+				Id:       gophtest.CreateUUID(t, "7728154c-9400-4f1b-a2a3-01deb83ece05").String(),
+				Name:     "No metadata",
+				Kind:     goph.DataKind_TEXT,
+				Metadata: []byte{},
+			},
+			data: []byte(gophtest.TextData),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+
+			key := newTestKey()
+			mockSecret := &goph.Secret{
+				Id:       tc.secret.Id,
+				Name:     tc.secret.Name,
+				Kind:     tc.secret.Kind,
+				Metadata: tc.secret.Metadata,
+			}
+
+			mockSecret.Metadata, err = key.Encrypt(tc.secret.GetMetadata())
+			require.NoError(t, err)
+
+			mockData, err := key.Encrypt(tc.data)
+			require.NoError(t, err)
+
+			secret, data, err := doGetSecret(t, mockSecret, mockData, nil)
+
+			require.NoError(t, err)
+			require.Equal(t, tc.secret, secret)
+			require.Equal(t, tc.data, data)
+		})
+	}
+}
+
+func TestGetSecretOnDecryptFailure(t *testing.T) {
+	tt := []struct {
+		name   string
+		secret *goph.Secret
+		data   []byte
+	}{
+		{
+			name: "Get secret fails if metadat decryption fails",
+			secret: &goph.Secret{
+				Id:       gophtest.CreateUUID(t, "df566e25-43a5-4c34-9123-3931fb809b45").String(),
+				Name:     "Bad metadata",
+				Kind:     goph.DataKind_TEXT,
+				Metadata: []byte(gophtest.Metadata),
+			},
+			data: []byte(gophtest.TextData),
+		},
+		{
+			name: "Get secret fails if data descryption fails",
+			secret: &goph.Secret{
+				Id:       gophtest.CreateUUID(t, "7728154c-9400-4f1b-a2a3-01deb83ece05").String(),
+				Name:     "Bad data",
+				Kind:     goph.DataKind_TEXT,
+				Metadata: []byte{},
+			},
+			data: []byte(gophtest.TextData),
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := doGetSecret(t, tc.secret, tc.data, nil)
+
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestGetSecretOnRepoFailure(t *testing.T) {
+	_, _, err := doGetSecret(t, nil, nil, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }

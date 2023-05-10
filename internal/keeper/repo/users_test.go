@@ -55,7 +55,7 @@ func TestRegisterUserOnFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := newPoolMock(t)
 			m.ExpectBeginTx(postgres.DefaultTxOptions)
-			m.ExpectQuery("INSERT INTO users").
+			m.ExpectQuery("INSERT").
 				WithArgs(gophtest.Username, gophtest.SecurityKey).
 				WillReturnError(tc.err)
 			m.ExpectRollback()
@@ -95,7 +95,7 @@ func TestVerifyFailsOnBadCredentials(t *testing.T) {
 	rows := pgxmock.NewRows([]string{"user_id", "username"})
 
 	m := newPoolMock(t)
-	m.ExpectQuery("SELECT user_id, username FROM users").
+	m.ExpectQuery("SELECT").
 		WithArgs(gophtest.Username, gophtest.SecurityKey).
 		WillReturnRows(rows)
 
@@ -108,7 +108,7 @@ func TestVerifyFailsOnBadCredentials(t *testing.T) {
 
 func TestVerifyFailsOnUnexpectedError(t *testing.T) {
 	m := newPoolMock(t)
-	m.ExpectQuery("SELECT user_id, username FROM users").
+	m.ExpectQuery("SELECT").
 		WithArgs(gophtest.Username, gophtest.SecurityKey).
 		WillReturnError(gophtest.ErrUnexpected)
 

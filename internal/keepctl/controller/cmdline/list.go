@@ -34,7 +34,7 @@ func doList(cmd *cobra.Command, args []string) error {
 	t.AddHeader("ID", "Name", "Kind", "Description")
 
 	for _, secret := range data {
-		t.AddLine(secret.Id, secret.Name, secret.Kind.String(), string(secret.GetMetadata()))
+		t.AddLine(secret.GetId(), secret.GetName(), secret.Kind.String(), string(secret.GetMetadata()))
 	}
 
 	t.Print()

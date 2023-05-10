@@ -70,6 +70,7 @@ func (uc *SecretsUseCase) PushText(
 }
 
 // List returns list of user's secrets.
+// All sensitive parts are decrypted.
 func (uc *SecretsUseCase) List(ctx context.Context, token string) ([]*goph.Secret, error) {
 	data, err := uc.secretsRepo.List(ctx, token)
 	if err != nil {
@@ -77,15 +78,38 @@ func (uc *SecretsUseCase) List(ctx context.Context, token string) ([]*goph.Secre
 	}
 
 	for i, val := range data {
-		decrypted, err := uc.key.Decrypt(val.GetMetadata())
+		data[i].Metadata, err = uc.key.Decrypt(val.GetMetadata())
 		if err != nil {
 			return nil, fmt.Errorf("SecretsUseCase - List - uc.key.Decrypt: %w", err)
 		}
-
-		data[i].Metadata = decrypted
 	}
 
 	return data, nil
+}
+
+// Get retrieves full user's secret.
+// All sensitive parts are decrypted.
+func (uc *SecretsUseCase) Get(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+) (*goph.Secret, []byte, error) {
+	secret, data, err := uc.secretsRepo.Get(ctx, token, id)
+	if err != nil {
+		return nil, nil, fmt.Errorf("SecretsUseCase - Get - uc.secretsRepo.Get: %w", err)
+	}
+
+	secret.Metadata, err = uc.key.Decrypt(secret.GetMetadata())
+	if err != nil {
+		return nil, nil, fmt.Errorf("SecretsUseCase - Get - uc.key.Decrypt(metadata): %w", err)
+	}
+
+	decryptedData, err := uc.key.Decrypt(data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("SecretsUseCase - Get - uc.key.Decrypt(data): %w", err)
+	}
+
+	return secret, decryptedData, nil
 }
 
 // Delete removes user's secret.

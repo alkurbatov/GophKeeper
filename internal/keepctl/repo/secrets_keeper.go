@@ -54,7 +54,7 @@ func (r *SecretsRepo) Push(
 	return id, nil
 }
 
-// List returns list of user's secrets.
+// List returns list of user's secrets without data.
 func (r *SecretsRepo) List(
 	ctx context.Context,
 	token string,
@@ -70,6 +70,25 @@ func (r *SecretsRepo) List(
 	}
 
 	return resp.Secrets, nil
+}
+
+// Get downloads full user's secret.
+func (r *SecretsRepo) Get(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+) (*goph.Secret, []byte, error) {
+	md := metadata.New(map[string]string{"authorization": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	req := &goph.GetSecretRequest{Id: id.String()}
+
+	resp, err := r.client.Get(ctx, req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("SecretsRepo - Get - r.client.Get: %w", entity.NewRequestError(err))
+	}
+
+	return resp.GetSecret(), resp.GetData(), nil
 }
 
 // Delete removes user's secret.

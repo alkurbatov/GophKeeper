@@ -74,6 +74,24 @@ func doListSecrets(
 	return secrets, err
 }
 
+func doGetSecret(t *testing.T, repoRV *entity.Secret, repoErr error) (*entity.Secret, error) {
+	t.Helper()
+
+	owner := uuid.NewV4()
+	id := uuid.NewV4()
+
+	m := &repo.SecretsRepoMock{}
+	m.On("Get", mock.Anything, owner, id).
+		Return(repoRV, repoErr)
+
+	sat := usecase.NewSecretsUseCase(m)
+	secret, err := sat.Get(context.Background(), owner, id)
+
+	m.AssertExpectations(t)
+
+	return secret, err
+}
+
 func doDeleteSecret(t *testing.T, repoErr error) error {
 	t.Helper()
 
@@ -142,6 +160,27 @@ func TestListSecrets(t *testing.T) {
 
 func TestListSecretFailsOnRepoFailure(t *testing.T) {
 	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestGetSecret(t *testing.T) {
+	expected := &entity.Secret{
+		ID:       uuid.NewV4(),
+		Name:     gophtest.SecretName,
+		Kind:     goph.DataKind_TEXT,
+		Metadata: []byte(gophtest.Metadata),
+		Data:     []byte(gophtest.TextData),
+	}
+
+	secret, err := doGetSecret(t, expected, nil)
+
+	require.NoError(t, err)
+	require.Equal(t, expected, secret)
+}
+
+func TestGetSecretFailsOnRepoFailure(t *testing.T) {
+	_, err := doGetSecret(t, nil, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }

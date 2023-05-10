@@ -85,12 +85,39 @@ func (s SecretsServer) List(
 	return &goph.ListSecretsResponse{Secrets: rv}, nil
 }
 
-// Get returns particular secret stored by a user.
+// Get returns particular secret with data.
 func (s SecretsServer) Get(
-	context.Context,
-	*goph.GetSecretRequest,
+	ctx context.Context,
+	req *goph.GetSecretRequest,
 ) (*goph.GetSecretResponse, error) {
-	return &goph.GetSecretResponse{}, nil
+	owner := entity.UserFromContext(ctx)
+	if owner == nil {
+		return nil, status.Errorf(codes.Unauthenticated, entity.ErrInvalidCredentials.Error())
+	}
+
+	id, err := uuid.FromString(req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	secret, err := s.secretsUseCase.Get(ctx, owner.ID, id)
+	if err != nil {
+		if errors.Is(err, entity.ErrSecretNotFound) {
+			return nil, status.Errorf(codes.NotFound, entity.ErrSecretNotFound.Error())
+		}
+
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &goph.GetSecretResponse{
+		Secret: &goph.Secret{
+			Id:       secret.ID.String(),
+			Name:     secret.Name,
+			Kind:     secret.Kind,
+			Metadata: secret.Metadata,
+		},
+		Data: secret.Data,
+	}, nil
 }
 
 // Update updates particular secret stored by a user.

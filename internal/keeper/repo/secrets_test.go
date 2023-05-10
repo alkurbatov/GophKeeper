@@ -13,11 +13,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func doDeleteSecret(t *testing.T, owner, secret uuid.UUID, m pgxmock.PgxPoolIface) error {
+func doGetSecret(
+	t *testing.T,
+	owner, id uuid.UUID,
+	m pgxmock.PgxPoolIface,
+) (*entity.Secret, error) {
 	t.Helper()
 
 	sat := newTestRepos(t, m).Secrets
-	err := sat.Delete(context.Background(), owner, secret)
+	secret, err := sat.Get(context.Background(), owner, id)
+
+	require.NoError(t, m.ExpectationsWereMet())
+
+	return secret, err
+}
+
+func doDeleteSecret(t *testing.T, owner, id uuid.UUID, m pgxmock.PgxPoolIface) error {
+	t.Helper()
+
+	sat := newTestRepos(t, m).Secrets
+	err := sat.Delete(context.Background(), owner, id)
 
 	require.NoError(t, m.ExpectationsWereMet())
 
@@ -83,7 +98,7 @@ func TestCreateSecretFailure(t *testing.T) {
 
 			m := newPoolMock(t)
 			m.ExpectBeginTx(postgres.DefaultTxOptions)
-			m.ExpectQuery("INSERT INTO secrets").
+			m.ExpectQuery("INSERT").
 				WithArgs(
 					owner,
 					gophtest.SecretName,
@@ -139,7 +154,7 @@ func TestListSecrets(t *testing.T) {
 
 			m := newPoolMock(t)
 			m.ExpectQuery("SELECT secret_id, name, kind, metadata FROM secrets").
-				WithArgs(owner.String()).
+				WithArgs(owner).
 				WillReturnRows(rows)
 
 			sat := newTestRepos(t, m).Secrets
@@ -156,8 +171,8 @@ func TestListSecretsOnFailure(t *testing.T) {
 	owner := uuid.NewV4()
 
 	m := newPoolMock(t)
-	m.ExpectQuery("SELECT secret_id, name, kind, metadata FROM secrets").
-		WithArgs(owner.String()).
+	m.ExpectQuery("SELECT").
+		WithArgs(owner).
 		WillReturnError(gophtest.ErrUnexpected)
 
 	sat := newTestRepos(t, m).Secrets
@@ -167,50 +182,105 @@ func TestListSecretsOnFailure(t *testing.T) {
 	require.NoError(t, m.ExpectationsWereMet())
 }
 
+func TestGetSecret(t *testing.T) {
+	owner := uuid.NewV4()
+
+	expected := &entity.Secret{
+		ID:       uuid.NewV4(),
+		Name:     gophtest.SecretName,
+		Kind:     goph.DataKind_TEXT,
+		Metadata: []byte(gophtest.Metadata),
+		Data:     []byte(gophtest.TextData),
+	}
+
+	rows := pgxmock.NewRows([]string{"secret_id", "name", "kind", "metadata", "data"}).
+		AddRow(expected.ID.String(), expected.Name, expected.Kind, expected.Metadata, expected.Data)
+
+	m := newPoolMock(t)
+	m.ExpectQuery("SELECT secret_id, name, kind, metadata, data FROM secrets").
+		WithArgs(expected.ID, owner).
+		WillReturnRows(rows)
+
+	secret, err := doGetSecret(t, owner, expected.ID, m)
+
+	require.NoError(t, err)
+	require.Equal(t, expected, secret)
+}
+
+func TestGetUnexistingSecret(t *testing.T) {
+	rows := pgxmock.NewRows([]string{"secret_id", "name", "kind", "metadata", "data"})
+
+	owner := uuid.NewV4()
+	id := uuid.NewV4()
+
+	m := newPoolMock(t)
+	m.ExpectQuery("SELECT").
+		WithArgs(id, owner).
+		WillReturnRows(rows)
+
+	_, err := doGetSecret(t, owner, id, m)
+
+	require.ErrorIs(t, err, entity.ErrSecretNotFound)
+}
+
+func TestGetSecretOnFailure(t *testing.T) {
+	owner := uuid.NewV4()
+	id := uuid.NewV4()
+
+	m := newPoolMock(t)
+	m.ExpectQuery("SELECT").
+		WithArgs(id, owner).
+		WillReturnError(gophtest.ErrUnexpected)
+
+	_, err := doGetSecret(t, owner, id, m)
+
+	require.ErrorIs(t, err, gophtest.ErrUnexpected)
+}
+
 func TestDeleteSecret(t *testing.T) {
 	owner := uuid.NewV4()
-	secret := uuid.NewV4()
+	id := uuid.NewV4()
 
 	m := newPoolMock(t)
 	m.ExpectBeginTx(postgres.DefaultTxOptions)
 	m.ExpectExec("DELETE FROM secrets").
-		WithArgs(secret.String(), owner.String()).
+		WithArgs(id, owner).
 		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 	m.ExpectCommit()
 
-	err := doDeleteSecret(t, owner, secret, m)
+	err := doDeleteSecret(t, owner, id, m)
 
 	require.NoError(t, err)
 }
 
 func TestDeleteUnexistingSecret(t *testing.T) {
 	owner := uuid.NewV4()
-	secret := uuid.NewV4()
+	id := uuid.NewV4()
 
 	m := newPoolMock(t)
 	m.ExpectBeginTx(postgres.DefaultTxOptions)
-	m.ExpectExec("DELETE FROM secrets").
-		WithArgs(secret.String(), owner.String()).
+	m.ExpectExec("DELETE").
+		WithArgs(id, owner).
 		WillReturnResult(pgxmock.NewResult("DELETE", 0))
 	m.ExpectRollback()
 
-	err := doDeleteSecret(t, owner, secret, m)
+	err := doDeleteSecret(t, owner, id, m)
 
 	require.ErrorIs(t, err, entity.ErrSecretNotFound)
 }
 
 func TestDeleteSecretOnFailure(t *testing.T) {
 	owner := uuid.NewV4()
-	secret := uuid.NewV4()
+	id := uuid.NewV4()
 
 	m := newPoolMock(t)
 	m.ExpectBeginTx(postgres.DefaultTxOptions)
-	m.ExpectExec("DELETE FROM secrets").
-		WithArgs(secret.String(), owner.String()).
+	m.ExpectExec("DELETE").
+		WithArgs(id, owner).
 		WillReturnError(gophtest.ErrUnexpected)
 	m.ExpectRollback()
 
-	err := doDeleteSecret(t, owner, secret, m)
+	err := doDeleteSecret(t, owner, id, m)
 
 	require.ErrorIs(t, err, gophtest.ErrUnexpected)
 }

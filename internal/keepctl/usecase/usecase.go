@@ -16,6 +16,7 @@ type Auth interface {
 type Secrets interface {
 	PushText(ctx context.Context, token, name, text, description string) (uuid.UUID, error)
 	List(ctx context.Context, token string) ([]*goph.Secret, error)
+	Get(ctx context.Context, token string, id uuid.UUID) (*goph.Secret, []byte, error)
 	Delete(ctx context.Context, token string, id uuid.UUID) error
 }
 

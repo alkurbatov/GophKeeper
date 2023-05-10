@@ -51,6 +51,19 @@ func (uc *SecretsUseCase) List(
 	return secrets, nil
 }
 
+// Get retrieves full secret info from database.
+func (uc *SecretsUseCase) Get(
+	ctx context.Context,
+	owner, id uuid.UUID,
+) (*entity.Secret, error) {
+	secret, err := uc.secretsRepo.Get(ctx, owner, id)
+	if err != nil {
+		return nil, fmt.Errorf("SecretsUseCase - Get - uc.secretsRepo.Get: %w", err)
+	}
+
+	return secret, nil
+}
+
 // Delete removes secret owned by user.
 func (uc *SecretsUseCase) Delete(
 	ctx context.Context,

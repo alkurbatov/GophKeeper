@@ -73,6 +73,7 @@ func (r *SecretsRepo) Create(
 }
 
 // List returns all secrets of the provided user.
+// Data is not filled in this case to reduce load on service.
 func (r *SecretsRepo) List(
 	ctx context.Context,
 	owner uuid.UUID,
@@ -85,12 +86,39 @@ func (r *SecretsRepo) List(
          secret_id, name, kind, metadata
      FROM secrets
      WHERE owner_id = $1`,
-		owner.String(),
+		owner,
 	); err != nil {
 		return nil, fmt.Errorf("SecretsRepo - List - r.Select: %w", err)
 	}
 
 	return rv, nil
+}
+
+// Get returns full secret info and data.
+func (r *SecretsRepo) Get(
+	ctx context.Context,
+	owner, id uuid.UUID,
+) (*entity.Secret, error) {
+	var secret entity.Secret
+
+	err := r.pg.Pool.
+		QueryRow(
+			ctx,
+			`SELECT secret_id, name, kind, metadata, data FROM secrets
+           WHERE secret_id=$1 AND owner_id = $2`,
+			id,
+			owner,
+		).
+		Scan(&secret.ID, &secret.Name, &secret.Kind, &secret.Metadata, &secret.Data)
+	if err != nil {
+		if postgres.IsEmptyResponse(err) {
+			return nil, entity.ErrSecretNotFound
+		}
+
+		return nil, fmt.Errorf("SecretsRepo - Get - r.pg.Pool.QueryRow.Scan: %w", err)
+	}
+
+	return &secret, nil
 }
 
 // Delete removes secret from database.
@@ -120,11 +148,11 @@ func (r *SecretsRepo) Delete(
 		ctx,
 		`DELETE FROM secrets
      WHERE secret_id = $1 AND owner_id = $2`,
-		id.String(),
-		owner.String(),
+		id,
+		owner,
 	)
 	if err != nil {
-		return fmt.Errorf("SecrtsRepo - Delete - tx.Exec: %w", err)
+		return fmt.Errorf("SecretsRepo - Delete - tx.Exec: %w", err)
 	}
 
 	if tag.RowsAffected() == 0 {

@@ -43,6 +43,33 @@ func doListSecrets(
 	return rv, err
 }
 
+func doGetSecret(
+	t *testing.T,
+	mockRV *entity.Secret,
+	mockErr error,
+) (*goph.GetSecretResponse, error) {
+	t.Helper()
+
+	m := newUseCasesMock()
+	m.Secrets.(*usecase.SecretsUseCaseMock).On(
+		"Get",
+		mock.Anything,
+		mock.AnythingOfType("uuid.UUID"),
+		mock.AnythingOfType("uuid.UUID"),
+	).
+		Return(mockRV, mockErr)
+
+	conn := createTestServerWithFakeAuth(t, m)
+	req := &goph.GetSecretRequest{Id: uuid.NewV4().String()}
+
+	client := goph.NewSecretsClient(conn)
+	rv, err := client.Get(context.Background(), req)
+
+	m.Secrets.(*usecase.SecretsUseCaseMock).AssertExpectations(t)
+
+	return rv, err
+}
+
 func doDeleteSecret(
 	t *testing.T,
 	mockErr error,
@@ -305,6 +332,72 @@ func TestListSecretsFailsIfNoUserInfo(t *testing.T) {
 
 func TestListSecretsFailsOnUseCaseFailure(t *testing.T) {
 	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+
+	requireEqualCode(t, codes.Internal, err)
+}
+
+func TestGetSecret(t *testing.T) {
+	tt := []struct {
+		name   string
+		secret *entity.Secret
+	}{
+		{
+			name: "Get secret",
+			secret: &entity.Secret{
+				ID:       gophtest.CreateUUID(t, "df566e25-43a5-4c34-9123-3931fb809b45"),
+				Name:     gophtest.SecretName,
+				Kind:     goph.DataKind_TEXT,
+				Metadata: []byte(gophtest.Metadata),
+				Data:     []byte(gophtest.TextData),
+			},
+		},
+		{
+			name: "Get secret without metadata",
+			secret: &entity.Secret{
+				ID:       gophtest.CreateUUID(t, "df566e25-43a5-4c34-9123-3931fb809b45"),
+				Name:     gophtest.SecretName,
+				Kind:     goph.DataKind_TEXT,
+				Metadata: []byte(gophtest.Metadata),
+				Data:     []byte(gophtest.TextData),
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := doGetSecret(t, tc.secret, nil)
+
+			require.NoError(t, err)
+			snaps.MatchSnapshot(t, resp.GetSecret())
+			require.Equal(t, tc.secret.Data, resp.GetData())
+		})
+	}
+}
+
+func TestGetSecretOnBadRequest(t *testing.T) {
+	conn := createTestServerWithFakeAuth(t, newUseCasesMock())
+
+	req := &goph.GetSecretRequest{Id: "xxx"}
+
+	client := goph.NewSecretsClient(conn)
+	_, err := client.Get(context.Background(), req)
+
+	requireEqualCode(t, codes.InvalidArgument, err)
+}
+
+func TestGetSecretFailsIfNoUserInfo(t *testing.T) {
+	conn := createTestServer(t, newUseCasesMock())
+
+	req := &goph.GetSecretRequest{Id: uuid.NewV4().String()}
+
+	client := goph.NewSecretsClient(conn)
+	_, err := client.Get(context.Background(), req)
+
+	requireEqualCode(t, codes.Unauthenticated, err)
+}
+
+func TestGetSecretFailsOnUseCaseFailure(t *testing.T) {
+	_, err := doGetSecret(t, nil, gophtest.ErrUnexpected)
 
 	requireEqualCode(t, codes.Internal, err)
 }

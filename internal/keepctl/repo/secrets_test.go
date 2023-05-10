@@ -77,6 +77,33 @@ func doListSecrets(
 	return rv, err
 }
 
+func doGetSecret(
+	t *testing.T,
+	mockRV *goph.GetSecretResponse,
+	mockErr error,
+) (*goph.Secret, []byte, error) {
+	t.Helper()
+
+	id := uuid.NewV4()
+	req := &goph.GetSecretRequest{Id: id.String()}
+
+	m := &goph.SecretsClientMock{}
+	m.On(
+		"Get",
+		mock.Anything,
+		req,
+		mock.Anything,
+	).
+		Return(mockRV, mockErr)
+
+	sat := repo.NewSecretsRepo(m)
+	secret, data, err := sat.Get(context.Background(), gophtest.AccessToken, id)
+
+	m.AssertExpectations(t)
+
+	return secret, data, err
+}
+
 func doDeleteSecret(t *testing.T, mockErr error) error {
 	t.Helper()
 
@@ -156,6 +183,33 @@ func TestListSecrets(t *testing.T) {
 
 func TestListSecretsOnOperationFailure(t *testing.T) {
 	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestGetSecret(t *testing.T) {
+	expSecret := &goph.Secret{
+		Id:       uuid.NewV4().String(),
+		Name:     gophtest.SecretName,
+		Kind:     goph.DataKind_TEXT,
+		Metadata: []byte(gophtest.Metadata),
+	}
+	expData := []byte(gophtest.TextData)
+
+	mockRV := &goph.GetSecretResponse{
+		Secret: expSecret,
+		Data:   expData,
+	}
+
+	secret, data, err := doGetSecret(t, mockRV, nil)
+
+	require.NoError(t, err)
+	require.Equal(t, expSecret, secret)
+	require.Equal(t, expData, data)
+}
+
+func TestGetSecretOnOperationFailure(t *testing.T) {
+	_, _, err := doGetSecret(t, nil, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }

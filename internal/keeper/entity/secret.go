@@ -12,9 +12,11 @@ var (
 	ErrSecretExists   = errors.New("secret already exists")
 )
 
+// Secret represents full secret info stored in the service.
 type Secret struct {
 	ID       uuid.UUID `db:"secret_id"`
 	Name     string
 	Kind     goph.DataKind
 	Metadata []byte
+	Data     []byte
 }

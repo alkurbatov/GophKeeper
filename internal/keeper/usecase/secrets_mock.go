@@ -40,6 +40,15 @@ func (m *SecretsUseCaseMock) List(
 	return args.Get(0).([]entity.Secret), args.Error(1)
 }
 
+func (m *SecretsUseCaseMock) Get(
+	ctx context.Context,
+	owner, id uuid.UUID,
+) (*entity.Secret, error) {
+	args := m.Called(ctx, owner, id)
+
+	return args.Get(0).(*entity.Secret), args.Error(1)
+}
+
 func (m *SecretsUseCaseMock) Delete(
 	ctx context.Context,
 	owner, id uuid.UUID,
