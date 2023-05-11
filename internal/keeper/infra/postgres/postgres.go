@@ -90,3 +90,25 @@ func (p *Postgres) Select(
 ) error {
 	return pgxscan.Select(ctx, p.Pool, dst, query, args...)
 }
+
+// RunAtomic executes provided function in Postgres transaction.
+func (p *Postgres) RunAtomic(ctx context.Context, operation func(tx Transaction) error) error {
+	tx, err := p.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("postgres - RunAtomic - p.BeginTx: %w", err)
+	}
+
+	if err := operation(tx); err != nil {
+		if rErr := tx.Rollback(ctx); rErr != nil {
+			logger.FromContext(ctx).Error().Err(rErr).Msg("postgres - RunAtomic - tx.Rollback")
+		}
+
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("postgres - RunAtomic - tx.Commit: %w", err)
+	}
+
+	return nil
+}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
-	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/logger"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
 	uuid "github.com/satori/go.uuid"
 )
@@ -28,40 +27,33 @@ func NewUsersRepo(
 func (r *UsersRepo) Register(
 	ctx context.Context,
 	username, securityKey string,
-) (id uuid.UUID, err error) {
-	tx, err := r.pg.BeginTx(ctx)
-	if err != nil {
-		return id, fmt.Errorf("UsersRepo - Register - r.pg.BeginTx: %w", err)
+) (uuid.UUID, error) {
+	var id uuid.UUID
+
+	fn := func(tx postgres.Transaction) error {
+		err := tx.QueryRow(
+			ctx,
+			`INSERT INTO
+           users (username, security_key)
+       VALUES
+           ($1, crypt($2, gen_salt('bf', 8)))
+       RETURNING user_id`,
+			username,
+			securityKey,
+		).Scan(&id)
+		if err != nil {
+			if postgres.IsEntityExists(err) {
+				return entity.ErrUserExists
+			}
+
+			return fmt.Errorf("UsersRepo - Register - tx.QueryRow.Scan: %w", err)
+		}
+
+		return nil
 	}
 
-	defer func() {
-		switch err {
-		case nil:
-			if cErr := tx.Commit(context.Background()); cErr != nil {
-				err = fmt.Errorf("UsersRepo - Register - tx.Commit: %w", cErr)
-			}
-		default:
-			if rErr := tx.Rollback(context.Background()); rErr != nil {
-				logger.FromContext(ctx).Error().Err(rErr).Msg("UsersRepo - Register - tx.Rollback")
-			}
-		}
-	}()
-
-	err = tx.QueryRow(
-		ctx,
-		`INSERT
-         INTO users (username, security_key)
-         VALUES ($1, crypt($2, gen_salt('bf', 8)))
-         RETURNING user_id`,
-		username,
-		securityKey,
-	).Scan(&id)
-	if err != nil {
-		if postgres.IsEntityExists(err) {
-			return id, entity.ErrUserExists
-		}
-
-		return id, fmt.Errorf("UsersRepo - Register - tx.QueryRow.Scan: %w", err)
+	if err := r.pg.RunAtomic(ctx, fn); err != nil {
+		return id, fmt.Errorf("UsersRepo - Register - r.pg.RunAtomic: %w", err)
 	}
 
 	return id, nil
@@ -78,8 +70,11 @@ func (r *UsersRepo) Verify(
 	err := r.pg.Pool.
 		QueryRow(
 			ctx,
-			`SELECT user_id, username FROM users
-           WHERE username=$1 AND security_key = crypt($2, security_key)`,
+			`SELECT
+           user_id, username
+       FROM
+           users
+       WHERE username=$1 AND security_key = crypt($2, security_key)`,
 			username,
 			securityKey,
 		).

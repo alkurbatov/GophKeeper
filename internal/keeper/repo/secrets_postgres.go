@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
-	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/logger"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	uuid "github.com/satori/go.uuid"
@@ -31,42 +30,33 @@ func (r *SecretsRepo) Create(
 	kind goph.DataKind,
 	metadata, data []byte,
 ) (id uuid.UUID, err error) {
-	tx, err := r.pg.BeginTx(ctx)
-	if err != nil {
-		return id, fmt.Errorf("SecretsRepo - Create - r.pg.BeginTx: %w", err)
+	fn := func(tx postgres.Transaction) error {
+		err := tx.QueryRow(
+			ctx,
+			`INSERT INTO
+           secrets (owner_id, name, kind, metadata, data)
+       VALUES
+           ($1, $2, $3, $4, $5)
+       RETURNING secret_id`,
+			owner,
+			name,
+			kind,
+			metadata,
+			data,
+		).Scan(&id)
+		if err != nil {
+			if postgres.IsEntityExists(err) {
+				return entity.ErrSecretExists
+			}
+
+			return fmt.Errorf("SecretsRepo - Create - tx.QueryRow.Scan: %w", err)
+		}
+
+		return nil
 	}
 
-	defer func() {
-		switch err {
-		case nil:
-			if cErr := tx.Commit(context.Background()); cErr != nil {
-				err = fmt.Errorf("SecretsRepo - Create - tx.Commit: %w", cErr)
-			}
-		default:
-			if rErr := tx.Rollback(context.Background()); rErr != nil {
-				logger.FromContext(ctx).Error().Err(rErr).Msg("SecretsRepo - Create - tx.Rollback")
-			}
-		}
-	}()
-
-	err = tx.QueryRow(
-		ctx,
-		`INSERT
-         INTO secrets (owner_id, name, kind, metadata, data)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING secret_id`,
-		owner,
-		name,
-		kind,
-		metadata,
-		data,
-	).Scan(&id)
-	if err != nil {
-		if postgres.IsEntityExists(err) {
-			return id, entity.ErrSecretExists
-		}
-
-		return id, fmt.Errorf("SecretsRepo - Create - tx.QueryRow.Scan: %w", err)
+	if err := r.pg.RunAtomic(ctx, fn); err != nil {
+		return id, fmt.Errorf("SecretsRepo - Create - r.pg.RunAtomic: %w", err)
 	}
 
 	return id, nil
@@ -84,7 +74,8 @@ func (r *SecretsRepo) List(
 		&rv,
 		`SELECT
          secret_id, name, kind, metadata
-     FROM secrets
+     FROM
+         secrets
      WHERE owner_id = $1`,
 		owner,
 	); err != nil {
@@ -104,8 +95,11 @@ func (r *SecretsRepo) Get(
 	err := r.pg.Pool.
 		QueryRow(
 			ctx,
-			`SELECT secret_id, name, kind, metadata, data FROM secrets
-           WHERE secret_id=$1 AND owner_id = $2`,
+			`SELECT
+           secret_id, name, kind, metadata, data
+       FROM
+           secrets
+       WHERE secret_id=$1 AND owner_id = $2`,
 			id,
 			owner,
 		).
@@ -126,37 +120,28 @@ func (r *SecretsRepo) Delete(
 	ctx context.Context,
 	owner, id uuid.UUID,
 ) (err error) {
-	tx, err := r.pg.BeginTx(ctx)
-	if err != nil {
-		return fmt.Errorf("SecretsRepo - Delete - r.pg.BeginTx: %w", err)
-	}
-
-	defer func() {
-		switch err {
-		case nil:
-			if cErr := tx.Commit(context.Background()); cErr != nil {
-				err = fmt.Errorf("SecretsRepo - Delete - tx.Commit: %w", cErr)
-			}
-		default:
-			if rErr := tx.Rollback(context.Background()); rErr != nil {
-				logger.FromContext(ctx).Error().Err(rErr).Msg("SecretsRepo - Delete - tx.Rollback")
-			}
+	fn := func(tx postgres.Transaction) error {
+		tag, err := tx.Exec(
+			ctx,
+			`DELETE FROM
+           secrets
+       WHERE secret_id = $1 AND owner_id = $2`,
+			id,
+			owner,
+		)
+		if err != nil {
+			return fmt.Errorf("SecretsRepo - Delete - tx.Exec: %w", err)
 		}
-	}()
 
-	tag, err := tx.Exec(
-		ctx,
-		`DELETE FROM secrets
-     WHERE secret_id = $1 AND owner_id = $2`,
-		id,
-		owner,
-	)
-	if err != nil {
-		return fmt.Errorf("SecretsRepo - Delete - tx.Exec: %w", err)
+		if tag.RowsAffected() == 0 {
+			return entity.ErrSecretNotFound
+		}
+
+		return nil
 	}
 
-	if tag.RowsAffected() == 0 {
-		return entity.ErrSecretNotFound
+	if err := r.pg.RunAtomic(ctx, fn); err != nil {
+		return fmt.Errorf("SecretsRepo - Delete - r.pg.RunAtomic: %w", err)
 	}
 
 	return nil
