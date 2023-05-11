@@ -40,7 +40,7 @@ func TestRegister(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-func TestRegisterOnOperationFailure(t *testing.T) {
+func TestRegisterOnClientFailure(t *testing.T) {
 	m := &goph.UsersClientMock{}
 	m.On(
 		"Register",

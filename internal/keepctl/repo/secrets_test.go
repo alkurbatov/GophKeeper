@@ -11,6 +11,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func doCreateSecret(
@@ -104,6 +105,55 @@ func doGetSecret(
 	return secret, data, err
 }
 
+func doUpdateSecret(
+	t *testing.T,
+	name string,
+	description []byte,
+	noDescription bool,
+	data []byte,
+	changed []string,
+	clientErr error,
+) error {
+	t.Helper()
+
+	id := uuid.NewV4()
+	req := &goph.UpdateSecretRequest{
+		Id:       id.String(),
+		Name:     name,
+		Metadata: description,
+		Data:     data,
+	}
+
+	mask, err := fieldmaskpb.New(req, changed...)
+	require.NoError(t, err)
+
+	req.UpdateMask = mask
+
+	m := &goph.SecretsClientMock{}
+	m.On(
+		"Update",
+		mock.Anything,
+		req,
+		mock.Anything,
+	).
+		Return(&goph.UpdateSecretResponse{}, clientErr)
+
+	sat := repo.NewSecretsRepo(m)
+	err = sat.Update(
+		context.Background(),
+		gophtest.AccessToken,
+		id,
+		name,
+		description,
+		noDescription,
+		data,
+	)
+
+	m.AssertExpectations(t)
+
+	return err
+}
+
 func doDeleteSecret(t *testing.T, mockErr error) error {
 	t.Helper()
 
@@ -139,7 +189,7 @@ func TestCreateSecret(t *testing.T) {
 	require.Equal(t, expected, id)
 }
 
-func TestCreateSecretOnOperationFailure(t *testing.T) {
+func TestCreateSecretOnClientFailure(t *testing.T) {
 	_, err := doCreateSecret(t, nil, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
@@ -181,7 +231,7 @@ func TestListSecrets(t *testing.T) {
 	}
 }
 
-func TestListSecretsOnOperationFailure(t *testing.T) {
+func TestListSecretsOnClientFailure(t *testing.T) {
 	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
@@ -208,8 +258,69 @@ func TestGetSecret(t *testing.T) {
 	require.Equal(t, expData, data)
 }
 
-func TestGetSecretOnOperationFailure(t *testing.T) {
+func TestGetSecretOnClientFailure(t *testing.T) {
 	_, _, err := doGetSecret(t, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestUpdateSecret(t *testing.T) {
+	tt := []struct {
+		name          string
+		secretName    string
+		description   []byte
+		noDescription bool
+		data          []byte
+		changed       []string
+	}{
+		{
+			name:        "Update all fields of a secret",
+			secretName:  gophtest.SecretName,
+			description: []byte(gophtest.Metadata),
+			data:        []byte(gophtest.TextData),
+			changed:     []string{"name", "metadata", "data"},
+		},
+		{
+			name:       "Update secret's name",
+			secretName: gophtest.SecretName,
+			changed:    []string{"name"},
+		},
+		{
+			name:        "Update secret's description",
+			description: []byte(gophtest.Metadata),
+			changed:     []string{"metadata"},
+		},
+		{
+			name:          "Reset secret's description",
+			noDescription: true,
+			changed:       []string{"metadata"},
+		},
+		{
+			name:    "Update secret's data",
+			data:    []byte(gophtest.TextData),
+			changed: []string{"data"},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			err := doUpdateSecret(
+				t,
+				tc.secretName,
+				tc.description,
+				tc.noDescription,
+				tc.data,
+				tc.changed,
+				nil,
+			)
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestUpdateSecretOnClientFailure(t *testing.T) {
+	err := doUpdateSecret(t, "", nil, false, nil, nil, gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }
@@ -220,7 +331,7 @@ func TestDeleteSecret(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDeleteSecretOnOperationFailure(t *testing.T) {
+func TestDeleteSecretOnClientFailure(t *testing.T) {
 	err := doDeleteSecret(t, gophtest.ErrUnexpected)
 
 	require.Error(t, err)

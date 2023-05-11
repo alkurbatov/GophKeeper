@@ -178,3 +178,7 @@ issues:
     - path: '(.+)_mock\.go'
       linters:
         - gomnd
+
+    - path: '(.+)_test\.go'
+      linters:
+        - funlen

@@ -23,8 +23,8 @@ func doPushText(cmd *cobra.Command, args []string) error {
 		cmd.Context(),
 		clientApp.AccessToken,
 		secretName,
-		args[0],
 		description,
+		args[0],
 	)
 	if err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")

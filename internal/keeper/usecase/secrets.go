@@ -64,6 +64,22 @@ func (uc *SecretsUseCase) Get(
 	return secret, nil
 }
 
+// Update changes secret info and data.
+func (uc *SecretsUseCase) Update(
+	ctx context.Context,
+	owner, id uuid.UUID,
+	changed []string,
+	name string,
+	metadata []byte,
+	data []byte,
+) error {
+	if err := uc.secretsRepo.Update(ctx, owner, id, changed, name, metadata, data); err != nil {
+		return fmt.Errorf("SecretsUseCase - Update - uc.secretsRepo.Update: %w", err)
+	}
+
+	return nil
+}
+
 // Delete removes secret owned by user.
 func (uc *SecretsUseCase) Delete(
 	ctx context.Context,

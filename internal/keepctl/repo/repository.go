@@ -22,6 +22,17 @@ type Secrets interface {
 
 	List(ctx context.Context, token string) ([]*goph.Secret, error)
 	Get(ctx context.Context, token string, id uuid.UUID) (*goph.Secret, []byte, error)
+
+	Update(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name string,
+		description []byte,
+		noDescription bool,
+		data []byte,
+	) error
+
 	Delete(ctx context.Context, token string, id uuid.UUID) error
 }
 

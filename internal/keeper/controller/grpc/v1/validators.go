@@ -3,6 +3,8 @@ package v1
 import (
 	"fmt"
 
+	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 )
 
@@ -103,14 +105,13 @@ func validateSecretData(data []byte) (string, bool) {
 	return "", true
 }
 
-// validateSecret validates provided secret and data.
-func validateSecret(
-	name string,
-	metadata, data []byte,
+// validateCreateSecretReq validates goph.validateCreateSecretReq.
+func validateCreateSecretReq(
+	req *goph.CreateSecretRequest,
 ) (*errdetails.BadRequest, bool) {
 	br := &errdetails.BadRequest{}
 
-	if reason, ok := validateSecretName(name); !ok {
+	if reason, ok := validateSecretName(req.GetName()); !ok {
 		v := &errdetails.BadRequest_FieldViolation{
 			Field:       "name",
 			Description: reason,
@@ -119,7 +120,7 @@ func validateSecret(
 		br.FieldViolations = append(br.FieldViolations, v)
 	}
 
-	if reason, ok := validateMetadata(metadata); !ok {
+	if reason, ok := validateMetadata(req.GetMetadata()); !ok {
 		v := &errdetails.BadRequest_FieldViolation{
 			Field:       "metadata",
 			Description: reason,
@@ -128,7 +129,7 @@ func validateSecret(
 		br.FieldViolations = append(br.FieldViolations, v)
 	}
 
-	if reason, ok := validateSecretData(data); !ok {
+	if reason, ok := validateSecretData(req.GetData()); !ok {
 		v := &errdetails.BadRequest_FieldViolation{
 			Field:       "data",
 			Description: reason,
@@ -142,4 +143,68 @@ func validateSecret(
 	}
 
 	return br, false
+}
+
+// validateUpdateSecretReq validates goph.validateUpdateSecretReq.
+func validateUpdateSecretReq(
+	req *goph.UpdateSecretRequest,
+) (uuid.UUID, *errdetails.BadRequest) {
+	var id uuid.UUID
+
+	br := &errdetails.BadRequest{}
+
+	mask := req.GetUpdateMask()
+	if mask == nil || len(mask.GetPaths()) == 0 {
+		v := &errdetails.BadRequest_FieldViolation{
+			Field:       "update_mask",
+			Description: _missingField,
+		}
+
+		br.FieldViolations = append(br.FieldViolations, v)
+
+		return id, br
+	}
+
+	id, err := uuid.FromString(req.GetId())
+	if err != nil {
+		v := &errdetails.BadRequest_FieldViolation{
+			Field:       "id",
+			Description: err.Error(),
+		}
+
+		br.FieldViolations = append(br.FieldViolations, v)
+	}
+
+	for _, field := range mask.GetPaths() {
+		var (
+			ok     bool
+			reason string
+		)
+
+		switch field {
+		case "name":
+			reason, ok = validateSecretName(req.GetName())
+
+		case "metadata":
+			reason, ok = validateMetadata(req.GetMetadata())
+
+		case "data":
+			reason, ok = validateSecretData(req.GetData())
+		}
+
+		if !ok {
+			v := &errdetails.BadRequest_FieldViolation{
+				Field:       field,
+				Description: reason,
+			}
+
+			br.FieldViolations = append(br.FieldViolations, v)
+		}
+	}
+
+	if len(br.FieldViolations) == 0 {
+		return id, nil
+	}
+
+	return id, br
 }

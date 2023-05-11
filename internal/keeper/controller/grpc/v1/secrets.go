@@ -29,23 +29,25 @@ func (s SecretsServer) Create(
 	ctx context.Context,
 	req *goph.CreateSecretRequest,
 ) (*goph.CreateSecretResponse, error) {
-	name := req.GetName()
-	kind := req.GetKind()
-	metadata := req.GetMetadata()
-	data := req.GetData()
-
-	if details, ok := validateSecret(name, metadata, data); !ok {
-		st := composeBadRequestError(details)
-
-		return nil, st.Err()
-	}
-
 	owner := entity.UserFromContext(ctx)
 	if owner == nil {
 		return nil, status.Errorf(codes.Unauthenticated, entity.ErrInvalidCredentials.Error())
 	}
 
-	id, err := s.secretsUseCase.Create(ctx, owner.ID, name, kind, metadata, data)
+	if details, ok := validateCreateSecretReq(req); !ok {
+		st := composeBadRequestError(details)
+
+		return nil, st.Err()
+	}
+
+	id, err := s.secretsUseCase.Create(
+		ctx,
+		owner.ID,
+		req.GetName(),
+		req.GetKind(),
+		req.GetMetadata(),
+		req.GetData(),
+	)
 	if err != nil {
 		if errors.Is(err, entity.ErrSecretExists) {
 			return nil, status.Errorf(codes.AlreadyExists, entity.ErrSecretExists.Error())
@@ -122,9 +124,41 @@ func (s SecretsServer) Get(
 
 // Update updates particular secret stored by a user.
 func (s SecretsServer) Update(
-	context.Context,
-	*goph.UpdateSecretRequest,
+	ctx context.Context,
+	req *goph.UpdateSecretRequest,
 ) (*goph.UpdateSecretResponse, error) {
+	owner := entity.UserFromContext(ctx)
+	if owner == nil {
+		return nil, status.Errorf(codes.Unauthenticated, entity.ErrInvalidCredentials.Error())
+	}
+
+	id, details := validateUpdateSecretReq(req)
+	if details != nil {
+		st := composeBadRequestError(details)
+
+		return nil, st.Err()
+	}
+
+	mask := req.GetUpdateMask()
+	// NB (alkurbatov): Remove redundand paths.
+	mask.Normalize()
+
+	if err := s.secretsUseCase.Update(
+		ctx,
+		owner.ID,
+		id,
+		mask.GetPaths(),
+		req.GetName(),
+		req.GetMetadata(),
+		req.GetData(),
+	); err != nil {
+		if errors.Is(err, entity.ErrSecretNotFound) {
+			return nil, status.Errorf(codes.NotFound, entity.ErrSecretNotFound.Error())
+		}
+
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
 	return &goph.UpdateSecretResponse{}, nil
 }
 

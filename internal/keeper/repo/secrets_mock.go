@@ -45,6 +45,19 @@ func (m *SecretsRepoMock) Get(
 	return args.Get(0).(*entity.Secret), args.Error(1)
 }
 
+func (m *SecretsRepoMock) Update(
+	ctx context.Context,
+	owner, id uuid.UUID,
+	changed []string,
+	name string,
+	metadata []byte,
+	data []byte,
+) error {
+	args := m.Called(ctx, owner, id, changed, name, metadata, data)
+
+	return args.Error(0)
+}
+
 func (m *SecretsRepoMock) Delete(
 	ctx context.Context,
 	owner, id uuid.UUID,

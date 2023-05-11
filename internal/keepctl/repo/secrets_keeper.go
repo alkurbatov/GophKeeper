@@ -8,6 +8,7 @@ import (
 	"github.com/alkurbatov/goph-keeper/pkg/goph"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 var _ Secrets = (*SecretsRepo)(nil)
@@ -89,6 +90,59 @@ func (r *SecretsRepo) Get(
 	}
 
 	return resp.GetSecret(), resp.GetData(), nil
+}
+
+// Update changes parameters of stored secret.
+func (r *SecretsRepo) Update(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+	name string,
+	description []byte,
+	noDescription bool,
+	data []byte,
+) error {
+	md := metadata.New(map[string]string{"authorization": token})
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	req := &goph.UpdateSecretRequest{Id: id.String()}
+
+	mask, err := fieldmaskpb.New(req)
+	if err != nil {
+		return fmt.Errorf("SecretsRepo - Update - fieldmaskpb.New: %w", err)
+	}
+
+	if name != "" {
+		if err := mask.Append(req, "name"); err != nil {
+			return fmt.Errorf("SecretsRepo - Update - mask.Append: %w", err)
+		}
+
+		req.Name = name
+	}
+
+	if len(description) != 0 || noDescription {
+		if err := mask.Append(req, "metadata"); err != nil {
+			return fmt.Errorf("SecretsRepo - Update - mask.Append: %w", err)
+		}
+
+		req.Metadata = description
+	}
+
+	if len(data) != 0 {
+		if err := mask.Append(req, "data"); err != nil {
+			return fmt.Errorf("SecretsRepo - Update - mask.Append: %w", err)
+		}
+
+		req.Data = data
+	}
+
+	req.UpdateMask = mask
+
+	if _, err := r.client.Update(ctx, req); err != nil {
+		return fmt.Errorf("SecretsRepo - Update - r.client.Update: %w", entity.NewRequestError(err))
+	}
+
+	return nil
 }
 
 // Delete removes user's secret.

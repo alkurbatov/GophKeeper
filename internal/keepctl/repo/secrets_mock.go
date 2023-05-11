@@ -44,6 +44,20 @@ func (m *SecretsRepoMock) Get(
 	return args.Get(0).(*goph.Secret), args.Get(1).([]byte), args.Error(2)
 }
 
+func (m *SecretsRepoMock) Update(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+	name string,
+	description []byte,
+	noDescription bool,
+	data []byte,
+) error {
+	args := m.Called(ctx, token, id, name, description, noDescription, data)
+
+	return args.Error(0)
+}
+
 func (m *SecretsRepoMock) Delete(
 	ctx context.Context,
 	token string,

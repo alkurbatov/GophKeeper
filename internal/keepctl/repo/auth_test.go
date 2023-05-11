@@ -40,7 +40,7 @@ func TestLogin(t *testing.T) {
 	m.AssertExpectations(t)
 }
 
-func TestLoginOnOperationFailure(t *testing.T) {
+func TestLoginOnClientFailure(t *testing.T) {
 	m := &goph.AuthClientMock{}
 	m.On(
 		"Login",

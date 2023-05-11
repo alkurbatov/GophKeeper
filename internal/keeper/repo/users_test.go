@@ -33,7 +33,7 @@ func TestRegisterUser(t *testing.T) {
 	require.NoError(t, m.ExpectationsWereMet())
 }
 
-func TestRegisterUserOnFailure(t *testing.T) {
+func TestRegisterUserOnDBFailure(t *testing.T) {
 	tt := []struct {
 		name     string
 		err      error
@@ -106,7 +106,7 @@ func TestVerifyFailsOnBadCredentials(t *testing.T) {
 	require.NoError(t, m.ExpectationsWereMet())
 }
 
-func TestVerifyFailsOnUnexpectedError(t *testing.T) {
+func TestVerifyFailsOnDBFailure(t *testing.T) {
 	m := newPoolMock(t)
 	m.ExpectQuery("SELECT").
 		WithArgs(gophtest.Username, gophtest.SecurityKey).

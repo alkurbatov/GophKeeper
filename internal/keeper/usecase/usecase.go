@@ -25,6 +25,16 @@ type Secrets interface {
 
 	List(ctx context.Context, owner uuid.UUID) ([]entity.Secret, error)
 	Get(ctx context.Context, owner, id uuid.UUID) (*entity.Secret, error)
+
+	Update(
+		ctx context.Context,
+		owner, id uuid.UUID,
+		changed []string,
+		name string,
+		metadata []byte,
+		data []byte,
+	) error
+
 	Delete(ctx context.Context, owner, id uuid.UUID) error
 }
 

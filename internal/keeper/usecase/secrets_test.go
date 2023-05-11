@@ -92,6 +92,42 @@ func doGetSecret(t *testing.T, repoRV *entity.Secret, repoErr error) (*entity.Se
 	return secret, err
 }
 
+func doUpdateSecret(t *testing.T, repoErr error) error {
+	t.Helper()
+
+	owner := uuid.NewV4()
+	id := uuid.NewV4()
+	changed := []string{"name", "metadata", "data"}
+
+	m := &repo.SecretsRepoMock{}
+	m.On(
+		"Update",
+		mock.Anything,
+		owner,
+		id,
+		changed,
+		gophtest.SecretName,
+		[]byte(gophtest.Metadata),
+		[]byte(gophtest.TextData),
+	).
+		Return(repoErr)
+
+	sat := usecase.NewSecretsUseCase(m)
+	err := sat.Update(
+		context.Background(),
+		owner,
+		id,
+		changed,
+		gophtest.SecretName,
+		[]byte(gophtest.Metadata),
+		[]byte(gophtest.TextData),
+	)
+
+	m.AssertExpectations(t)
+
+	return err
+}
+
 func doDeleteSecret(t *testing.T, repoErr error) error {
 	t.Helper()
 
@@ -111,88 +147,182 @@ func doDeleteSecret(t *testing.T, repoErr error) error {
 }
 
 func TestCreateSecret(t *testing.T) {
-	expected := uuid.NewV4()
+	type expected struct {
+		id  uuid.UUID
+		err error
+	}
 
-	id, err := doCreateSecret(t, expected, nil)
-
-	require.NoError(t, err)
-	require.Equal(t, expected, id)
-}
-
-func TestCreateSecretFailsIfUserExists(t *testing.T) {
-	_, err := doCreateSecret(t, uuid.UUID{}, entity.ErrSecretExists)
-
-	require.Error(t, err)
-}
-
-func TestListSecrets(t *testing.T) {
 	tt := []struct {
 		name     string
-		expected []entity.Secret
+		expected expected
 	}{
 		{
-			name: "List secrets of a user",
-			expected: []entity.Secret{
-				{ID: uuid.NewV4(), Name: gophtest.SecretName, Kind: goph.DataKind_BINARY},
-				{
-					ID:       uuid.NewV4(),
-					Name:     gophtest.SecretName + "ex",
-					Kind:     goph.DataKind_TEXT,
-					Metadata: []byte(gophtest.Metadata),
-				},
+			name: "Create secret",
+			expected: expected{
+				id:  uuid.NewV4(),
+				err: nil,
 			},
 		},
 		{
-			name:     "List secrets when user has no secrets",
-			expected: []entity.Secret{},
+			name: "Create secret fails if secret exists",
+			expected: expected{
+				id:  uuid.UUID{},
+				err: entity.ErrSecretExists,
+			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			rv, err := doListSecrets(t, tc.expected, nil)
+			id, err := doCreateSecret(t, tc.expected.id, tc.expected.err)
 
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, rv)
+			require.ErrorIs(t, err, tc.expected.err)
+			require.Equal(t, tc.expected.id, id)
 		})
 	}
 }
 
-func TestListSecretFailsOnRepoFailure(t *testing.T) {
-	_, err := doListSecrets(t, nil, gophtest.ErrUnexpected)
+func TestListSecrets(t *testing.T) {
+	type expected struct {
+		secrets []entity.Secret
+		err     error
+	}
 
-	require.Error(t, err)
+	tt := []struct {
+		name     string
+		expected expected
+	}{
+		{
+			name: "List secrets of a user",
+			expected: expected{
+				secrets: []entity.Secret{
+					{
+						ID:   uuid.NewV4(),
+						Name: gophtest.SecretName,
+						Kind: goph.DataKind_BINARY,
+					},
+					{
+						ID:       uuid.NewV4(),
+						Name:     gophtest.SecretName + "ex",
+						Kind:     goph.DataKind_TEXT,
+						Metadata: []byte(gophtest.Metadata),
+					},
+				},
+				err: nil,
+			},
+		},
+		{
+			name: "List secrets when user has no secrets",
+			expected: expected{
+				secrets: []entity.Secret{},
+				err:     nil,
+			},
+		},
+		{
+			name: "List secrets fails if repo fails",
+			expected: expected{
+				secrets: nil,
+				err:     gophtest.ErrUnexpected,
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			rv, err := doListSecrets(t, tc.expected.secrets, tc.expected.err)
+
+			require.ErrorIs(t, err, tc.expected.err)
+			require.Equal(t, tc.expected.secrets, rv)
+		})
+	}
 }
 
 func TestGetSecret(t *testing.T) {
-	expected := &entity.Secret{
-		ID:       uuid.NewV4(),
-		Name:     gophtest.SecretName,
-		Kind:     goph.DataKind_TEXT,
-		Metadata: []byte(gophtest.Metadata),
-		Data:     []byte(gophtest.TextData),
+	type expected struct {
+		secret *entity.Secret
+		err    error
 	}
 
-	secret, err := doGetSecret(t, expected, nil)
+	tt := []struct {
+		name     string
+		expected expected
+	}{
+		{
+			name: "Get secret",
+			expected: expected{
+				secret: &entity.Secret{
+					ID:       uuid.NewV4(),
+					Name:     gophtest.SecretName,
+					Kind:     goph.DataKind_TEXT,
+					Metadata: []byte(gophtest.Metadata),
+					Data:     []byte(gophtest.TextData),
+				},
+				err: nil,
+			},
+		},
+		{
+			name: "Get secret fails if secret doesn't exist",
+			expected: expected{
+				secret: nil,
+				err:    entity.ErrSecretNotFound,
+			},
+		},
+	}
 
-	require.NoError(t, err)
-	require.Equal(t, expected, secret)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			secret, err := doGetSecret(t, tc.expected.secret, tc.expected.err)
+
+			require.ErrorIs(t, err, tc.expected.err)
+			require.Equal(t, tc.expected.secret, secret)
+		})
+	}
 }
 
-func TestGetSecretFailsOnRepoFailure(t *testing.T) {
-	_, err := doGetSecret(t, nil, gophtest.ErrUnexpected)
+func TestUpdateSecret(t *testing.T) {
+	tt := []struct {
+		name     string
+		expected error
+	}{
+		{
+			name:     "Update secret",
+			expected: nil,
+		},
+		{
+			name:     "Update secret if secret not found",
+			expected: entity.ErrSecretNotFound,
+		},
+	}
 
-	require.Error(t, err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			err := doUpdateSecret(t, tc.expected)
+
+			require.ErrorIs(t, err, tc.expected)
+		})
+	}
 }
 
 func TestDeleteSecret(t *testing.T) {
-	err := doDeleteSecret(t, nil)
+	tt := []struct {
+		name     string
+		expected error
+	}{
+		{
+			name:     "Delete secret",
+			expected: nil,
+		},
+		{
+			name:     "Delete secret if secret not found",
+			expected: entity.ErrSecretNotFound,
+		},
+	}
 
-	require.NoError(t, err)
-}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			err := doDeleteSecret(t, tc.expected)
 
-func TestDeleteSecretFailsOnRepoFailure(t *testing.T) {
-	err := doDeleteSecret(t, gophtest.ErrUnexpected)
-
-	require.Error(t, err)
+			require.ErrorIs(t, err, tc.expected)
+		})
+	}
 }

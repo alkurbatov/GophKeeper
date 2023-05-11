@@ -5,6 +5,7 @@ import (
 
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/app"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/config"
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/controller/cmdline/editcmd"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/controller/cmdline/pushcmd"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -63,6 +64,7 @@ func init() {
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 
 	rootCmd.AddCommand(pushcmd.PushCmd)
+	rootCmd.AddCommand(editcmd.EditCmd)
 }
 
 // initializeConfig does initialization routine before reading commandline flags.

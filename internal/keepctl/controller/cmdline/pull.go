@@ -22,12 +22,12 @@ func init() {
 }
 
 func doPull(cmd *cobra.Command, args []string) error {
-	clientApp, err := app.FromContext(cmd.Context())
+	id, err := uuid.FromString(args[0])
 	if err != nil {
 		return err
 	}
 
-	id, err := uuid.FromString(args[0])
+	clientApp, err := app.FromContext(cmd.Context())
 	if err != nil {
 		return err
 	}

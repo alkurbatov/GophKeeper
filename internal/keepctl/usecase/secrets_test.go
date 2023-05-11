@@ -96,6 +96,46 @@ func doGetSecret(
 	return secret, data, err
 }
 
+func doUpdateTextSecret(
+	t *testing.T,
+	name, description string,
+	noDescription bool,
+	text string,
+	repoErr error,
+) error {
+	t.Helper()
+
+	id := uuid.NewV4()
+
+	m := &repo.SecretsRepoMock{}
+	m.On(
+		"Update",
+		mock.Anything,
+		gophtest.AccessToken,
+		id,
+		name,
+		mock.AnythingOfType("[]uint8"),
+		noDescription,
+		mock.AnythingOfType("[]uint8"),
+	).
+		Return(repoErr)
+
+	sat := usecase.NewSecretsUseCase(newTestKey(), m)
+	err := sat.EditText(
+		context.Background(),
+		gophtest.AccessToken,
+		id,
+		name,
+		description,
+		noDescription,
+		text,
+	)
+
+	m.AssertExpectations(t)
+
+	return err
+}
+
 func doDelete(t *testing.T, mockErr error) error {
 	t.Helper()
 
@@ -308,6 +348,60 @@ func TestGetSecretOnDecryptFailure(t *testing.T) {
 
 func TestGetSecretOnRepoFailure(t *testing.T) {
 	_, _, err := doGetSecret(t, nil, nil, gophtest.ErrUnexpected)
+
+	require.Error(t, err)
+}
+
+func TestUpdateTextSecret(t *testing.T) {
+	tt := []struct {
+		name          string
+		secretName    string
+		description   string
+		noDescription bool
+		text          string
+	}{
+		{
+			name:        "Update all fields of a secret",
+			secretName:  gophtest.SecretName,
+			description: gophtest.Metadata,
+			text:        gophtest.TextData,
+		},
+		{
+			name:       "Update secret's name",
+			secretName: gophtest.SecretName,
+		},
+		{
+			name:        "Update secret's description",
+			description: gophtest.Metadata,
+		},
+		{
+			name:          "Reset secret's description",
+			noDescription: true,
+		},
+		{
+			name: "Update secret's text",
+			text: gophtest.TextData,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			err := doUpdateTextSecret(
+				t,
+				tc.secretName,
+				tc.description,
+				tc.noDescription,
+				tc.text,
+				nil,
+			)
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestUpdateSecretOnRepoFailure(t *testing.T) {
+	err := doUpdateTextSecret(t, "", "", false, "", gophtest.ErrUnexpected)
 
 	require.Error(t, err)
 }

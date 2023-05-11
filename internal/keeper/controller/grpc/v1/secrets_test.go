@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func doListSecrets(
@@ -199,7 +200,7 @@ func TestCreateSecretWithBadRequest(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			conn := createTestServer(t, newUseCasesMock())
+			conn := createTestServerWithFakeAuth(t, newUseCasesMock())
 
 			req := &goph.CreateSecretRequest{
 				Name:     tc.secretName,
@@ -219,15 +220,8 @@ func TestCreateSecretWithBadRequest(t *testing.T) {
 func TestCreateSecretFailsIfNoUserInfo(t *testing.T) {
 	conn := createTestServer(t, newUseCasesMock())
 
-	req := &goph.CreateSecretRequest{
-		Name:     gophtest.SecretName,
-		Kind:     goph.DataKind_BINARY,
-		Metadata: []byte(gophtest.Metadata),
-		Data:     []byte(gophtest.TextData),
-	}
-
 	client := goph.NewSecretsClient(conn)
-	_, err := client.Create(context.Background(), req)
+	_, err := client.Create(context.Background(), &goph.CreateSecretRequest{})
 
 	requireEqualCode(t, codes.Unauthenticated, err)
 }
@@ -322,10 +316,8 @@ func TestListSecrets(t *testing.T) {
 func TestListSecretsFailsIfNoUserInfo(t *testing.T) {
 	conn := createTestServer(t, newUseCasesMock())
 
-	req := &goph.ListSecretsRequest{}
-
 	client := goph.NewSecretsClient(conn)
-	_, err := client.List(context.Background(), req)
+	_, err := client.List(context.Background(), &goph.ListSecretsRequest{})
 
 	requireEqualCode(t, codes.Unauthenticated, err)
 }
@@ -388,18 +380,270 @@ func TestGetSecretOnBadRequest(t *testing.T) {
 func TestGetSecretFailsIfNoUserInfo(t *testing.T) {
 	conn := createTestServer(t, newUseCasesMock())
 
-	req := &goph.GetSecretRequest{Id: uuid.NewV4().String()}
-
 	client := goph.NewSecretsClient(conn)
-	_, err := client.Get(context.Background(), req)
+	_, err := client.Get(context.Background(), &goph.GetSecretRequest{})
 
 	requireEqualCode(t, codes.Unauthenticated, err)
 }
 
-func TestGetSecretFailsOnUseCaseFailure(t *testing.T) {
-	_, err := doGetSecret(t, nil, gophtest.ErrUnexpected)
+func TestGetSecretOnUsecaseFailure(t *testing.T) {
+	tt := []struct {
+		name     string
+		ucErr    error
+		expected codes.Code
+	}{
+		{
+			name:     "Get secret fails if secret not found",
+			ucErr:    entity.ErrSecretNotFound,
+			expected: codes.NotFound,
+		},
+		{
+			name:     "Get secret fails on expected error",
+			ucErr:    gophtest.ErrUnexpected,
+			expected: codes.Internal,
+		},
+	}
 
-	requireEqualCode(t, codes.Internal, err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := doGetSecret(t, nil, tc.ucErr)
+
+			requireEqualCode(t, tc.expected, err)
+		})
+	}
+}
+
+func TestUpdateSecret(t *testing.T) {
+	tt := []struct {
+		name    string
+		req     *goph.UpdateSecretRequest
+		changed []string
+	}{
+		{
+			name: "Update all fields of a secret",
+			req: &goph.UpdateSecretRequest{
+				Name:     gophtest.SecretName,
+				Metadata: []byte(gophtest.Metadata),
+				Data:     []byte(gophtest.TextData),
+			},
+			changed: []string{"data", "metadata", "name"},
+		},
+		{
+			name: "Update secret's name",
+			req: &goph.UpdateSecretRequest{
+				Name: gophtest.SecretName,
+			},
+			changed: []string{"name"},
+		},
+		{
+			name: "Update secret's metadata",
+			req: &goph.UpdateSecretRequest{
+				Metadata: []byte(gophtest.Metadata),
+			},
+			changed: []string{"metadata"},
+		},
+		{
+			name: "Reset secret's metadata",
+			req: &goph.UpdateSecretRequest{
+				Metadata: []byte(nil),
+			},
+			changed: []string{"metadata"},
+		},
+		{
+			name: "Update secret's data",
+			req: &goph.UpdateSecretRequest{
+				Data: []byte(gophtest.TextData),
+			},
+			changed: []string{"data"},
+		},
+		{
+			name: "Update secret with maximum fields limits",
+			req: &goph.UpdateSecretRequest{
+				Name:     strings.Repeat("#", v1.DefaultMaxSecretNameLength),
+				Metadata: []byte(strings.Repeat("#", v1.DefaultMetadataLimit)),
+				Data:     []byte(strings.Repeat("#", v1.DefaultDataLimit)),
+			},
+			changed: []string{"data", "metadata", "name"},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			id := uuid.NewV4()
+
+			mask, err := fieldmaskpb.New(tc.req, tc.changed...)
+			require.NoError(t, err)
+
+			tc.req.Id = id.String()
+			tc.req.UpdateMask = mask
+
+			m := newUseCasesMock()
+			m.Secrets.(*usecase.SecretsUseCaseMock).On(
+				"Update",
+				mock.Anything,
+				mock.AnythingOfType("uuid.UUID"),
+				id,
+				tc.changed,
+				tc.req.Name,
+				tc.req.Metadata,
+				tc.req.Data,
+			).
+				Return(nil)
+
+			conn := createTestServerWithFakeAuth(t, m)
+
+			client := goph.NewSecretsClient(conn)
+			_, err = client.Update(context.Background(), tc.req)
+
+			m.Secrets.(*usecase.SecretsUseCaseMock).AssertExpectations(t)
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestUpdateSecretOnBadRequest(t *testing.T) {
+	tt := []struct {
+		name    string
+		req     *goph.UpdateSecretRequest
+		changed []string
+	}{
+		{
+			name: "Update fails if no mask specified",
+			req: &goph.UpdateSecretRequest{
+				Id:   uuid.NewV4().String(),
+				Name: gophtest.SecretName,
+			},
+			changed: nil,
+		},
+		{
+			name: "Update fails if bad secret id provided",
+			req: &goph.UpdateSecretRequest{
+				Id:   "xxx",
+				Name: gophtest.SecretName,
+			},
+			changed: []string{"name"},
+		},
+		{
+			name: "Update fails if empty name provided",
+			req: &goph.UpdateSecretRequest{
+				Id:   uuid.NewV4().String(),
+				Name: "",
+			},
+			changed: []string{"name"},
+		},
+		{
+			name: "Update fails if too long name provided",
+			req: &goph.UpdateSecretRequest{
+				Id:   uuid.NewV4().String(),
+				Name: strings.Repeat("#", v1.DefaultMaxSecretNameLength+1),
+			},
+			changed: []string{"name"},
+		},
+		{
+			name: "Update fails if too long metadata provided",
+			req: &goph.UpdateSecretRequest{
+				Id:       uuid.NewV4().String(),
+				Metadata: []byte(strings.Repeat("#", v1.DefaultMetadataLimit+1)),
+			},
+			changed: []string{"metadata"},
+		},
+		{
+			name: "Update fails if empty data provided",
+			req: &goph.UpdateSecretRequest{
+				Id: uuid.NewV4().String(),
+			},
+			changed: []string{"data"},
+		},
+		{
+			name: "Update fails if too long data provided",
+			req: &goph.UpdateSecretRequest{
+				Id:   uuid.NewV4().String(),
+				Data: []byte(strings.Repeat("#", v1.DefaultDataLimit+1)),
+			},
+			changed: []string{"data"},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			conn := createTestServerWithFakeAuth(t, newUseCasesMock())
+
+			mask, err := fieldmaskpb.New(tc.req, tc.changed...)
+			require.NoError(t, err)
+
+			tc.req.UpdateMask = mask
+
+			client := goph.NewSecretsClient(conn)
+			_, err = client.Update(context.Background(), tc.req)
+
+			requireEqualCode(t, codes.InvalidArgument, err)
+		})
+	}
+}
+
+func TestUpdateSecretFailsIfNoUserInfo(t *testing.T) {
+	conn := createTestServer(t, newUseCasesMock())
+
+	client := goph.NewSecretsClient(conn)
+	_, err := client.Update(context.Background(), &goph.UpdateSecretRequest{})
+
+	requireEqualCode(t, codes.Unauthenticated, err)
+}
+
+func TestUpdateSecretOnUsecaseFailure(t *testing.T) {
+	tt := []struct {
+		name     string
+		ucErr    error
+		expected codes.Code
+	}{
+		{
+			name:     "Update secret fails if secret not found",
+			ucErr:    entity.ErrSecretNotFound,
+			expected: codes.NotFound,
+		},
+		{
+			name:     "Update secret fails on expected error",
+			ucErr:    gophtest.ErrUnexpected,
+			expected: codes.Internal,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			id := uuid.NewV4()
+
+			m := newUseCasesMock()
+			m.Secrets.(*usecase.SecretsUseCaseMock).On(
+				"Update",
+				mock.Anything,
+				mock.AnythingOfType("uuid.UUID"),
+				id,
+				[]string{"name"},
+				gophtest.SecretName,
+				[]byte(nil),
+				[]byte(nil),
+			).
+				Return(tc.ucErr)
+
+			conn := createTestServerWithFakeAuth(t, m)
+			req := &goph.UpdateSecretRequest{
+				Id:   id.String(),
+				Name: gophtest.SecretName,
+			}
+
+			mask, err := fieldmaskpb.New(req, "name")
+			require.NoError(t, err)
+
+			req.UpdateMask = mask
+
+			client := goph.NewSecretsClient(conn)
+			_, err = client.Update(context.Background(), req)
+
+			m.Secrets.(*usecase.SecretsUseCaseMock).AssertExpectations(t)
+			requireEqualCode(t, tc.expected, err)
+		})
+	}
 }
 
 func TestDeleteSecret(t *testing.T) {
@@ -422,16 +666,35 @@ func TestDeleteSecretOnBadRequest(t *testing.T) {
 func TestDeleteSecretFailsIfNoUserInfo(t *testing.T) {
 	conn := createTestServer(t, newUseCasesMock())
 
-	req := &goph.DeleteSecretRequest{Id: uuid.NewV4().String()}
-
 	client := goph.NewSecretsClient(conn)
-	_, err := client.Delete(context.Background(), req)
+	_, err := client.Delete(context.Background(), &goph.DeleteSecretRequest{})
 
 	requireEqualCode(t, codes.Unauthenticated, err)
 }
 
-func TestDeleteSecretFailsOnUseCaseFailure(t *testing.T) {
-	_, err := doDeleteSecret(t, gophtest.ErrUnexpected)
+func TestDeleteSecretOnUsecaseFailure(t *testing.T) {
+	tt := []struct {
+		name     string
+		ucErr    error
+		expected codes.Code
+	}{
+		{
+			name:     "Delete secret fails if secret not found",
+			ucErr:    entity.ErrSecretNotFound,
+			expected: codes.NotFound,
+		},
+		{
+			name:     "Delete secret fails on expected error",
+			ucErr:    gophtest.ErrUnexpected,
+			expected: codes.Internal,
+		},
+	}
 
-	requireEqualCode(t, codes.Internal, err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := doDeleteSecret(t, tc.ucErr)
+
+			requireEqualCode(t, tc.expected, err)
+		})
+	}
 }

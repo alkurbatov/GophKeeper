@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
@@ -11,6 +13,8 @@ import (
 )
 
 var _ Secrets = (*SecretsRepo)(nil)
+
+var ErrNoValuesToUpdate = errors.New("no values to update")
 
 // SecretsRepo is facade to secrets stored in Postgres.
 type SecretsRepo struct {
@@ -113,6 +117,71 @@ func (r *SecretsRepo) Get(
 	}
 
 	return &secret, nil
+}
+
+// Update changes secret info and data.
+func (r *SecretsRepo) Update(
+	ctx context.Context,
+	owner, id uuid.UUID,
+	changed []string,
+	name string,
+	metadata, data []byte,
+) error {
+	fn := func(tx postgres.Transaction) error {
+		values := []any{}
+		query := "UPDATE secrets SET"
+
+		for _, field := range changed {
+			if len(values) != 0 {
+				query += ","
+			}
+
+			switch field {
+			case "name":
+				values = append(values, name)
+				query += " name = $" + strconv.Itoa(len(values))
+
+			case "metadata":
+				values = append(values, metadata)
+				query += " metadata = $" + strconv.Itoa(len(values))
+
+			case "data":
+				values = append(values, data)
+				query += " data = $" + strconv.Itoa(len(values))
+			}
+		}
+
+		if len(values) == 0 {
+			return fmt.Errorf("SecretsRepo - Update: %w", ErrNoValuesToUpdate)
+		}
+
+		values = append(values, id)
+		query += " WHERE secret_id = $" + strconv.Itoa(len(values))
+
+		values = append(values, owner)
+		query += " AND owner_id = $" + strconv.Itoa(len(values))
+
+		tag, err := tx.Exec(
+			ctx,
+			query,
+			values...,
+		)
+		if err != nil {
+			return fmt.Errorf("SecretsRepo - Update - tx.Exec: %w", err)
+		}
+
+		if tag.RowsAffected() == 0 {
+			return entity.ErrSecretNotFound
+		}
+
+		return nil
+	}
+
+	if err := r.pg.RunAtomic(ctx, fn); err != nil {
+		return fmt.Errorf("SecretsRepo - Update - r.pg.RunAtomic: %w", err)
+	}
+
+	return nil
 }
 
 // Delete removes secret from database.
