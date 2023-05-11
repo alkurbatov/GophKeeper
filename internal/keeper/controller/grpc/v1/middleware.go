@@ -16,6 +16,44 @@ import (
 
 var methodsWithoutAuth = regexp.MustCompile(`/(Login|Register)`)
 
+// LoggingUnaryInterceptor is gRPC unary server interceptor
+// which logs incoming requests and responses.
+func LoggingUnarysInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
+	interceptor := func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (any, error) {
+		l := log.With().
+			Str("req-id", uuid.NewV4().String()).
+			Logger()
+
+		l.Info().
+			Str("method", info.FullMethod).
+			Msg("")
+
+		resp, err := handler(l.WithContext(ctx), req)
+
+		status, ok := status.FromError(err)
+		if ok {
+			l.Info().
+				Str("status", status.Code().String()).
+				Msg("")
+
+			return resp, err
+		}
+
+		l.Info().
+			Err(err).
+			Msg("")
+
+		return resp, err
+	}
+
+	return interceptor
+}
+
 // AuthUnaryInterceptor is gRPC unary server interceptor extracts access token
 // from metadata and verifies it.
 // If the token is valid, request is passed further.

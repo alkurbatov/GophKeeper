@@ -50,7 +50,10 @@ func Run(cfg *config.Config) error { //nolint:funlen // no sense to split main R
 		cfg.CrtPath,
 		cfg.KeyPath,
 		grpc.MaxRecvMsgSize(v1.DefaultMaxMessageSize),
-		grpc.ChainUnaryInterceptor(v1.AuthUnaryInterceptor(cfg.Secret)),
+		grpc.ChainUnaryInterceptor(
+			v1.LoggingUnarysInterceptor(log),
+			v1.AuthUnaryInterceptor(cfg.Secret),
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("app - Run - grpcserver.New: %w", err)
