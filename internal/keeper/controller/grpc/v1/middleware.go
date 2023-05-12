@@ -18,7 +18,7 @@ var methodsWithoutAuth = regexp.MustCompile(`/(Login|Register)`)
 
 // LoggingUnaryInterceptor is gRPC unary server interceptor
 // which logs incoming requests and responses.
-func LoggingUnarysInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
+func LoggingUnaryInterceptor(log *logger.Logger) grpc.UnaryServerInterceptor {
 	interceptor := func(
 		ctx context.Context,
 		req any,
