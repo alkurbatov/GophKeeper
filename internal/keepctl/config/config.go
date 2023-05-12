@@ -23,6 +23,7 @@ func New() *Config {
 	viper.SetDefault("address", "127.0.0.1:50051")
 	viper.SetDefault("verbose", false)
 
+	viper.SetEnvPrefix("GOPH")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 

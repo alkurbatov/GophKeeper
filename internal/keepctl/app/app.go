@@ -33,6 +33,7 @@ type App struct {
 // New creates and initializes new App object.
 func New(cfg *config.Config) (*App, error) {
 	log := logger.New(cfg.Verbose)
+	log.Debug().Msg(cfg.String())
 
 	conn, err := grpcconn.New(cfg.Address, cfg.CAPath)
 	if err != nil {
