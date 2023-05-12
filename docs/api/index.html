@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Protocol Documentation</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>
+    <style>
+      body {
+        width: 60em;
+        margin: 1em auto;
+        color: #222;
+        font-family: "Ubuntu", sans-serif;
+        padding-bottom: 4em;
+      }
+
+      h1 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      h2 {
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+        margin: 1.5em 0;
+      }
+
+      h3 {
+        font-weight: normal;
+        border-bottom: 1px solid #aaa;
+        padding-bottom: 0.5ex;
+      }
+
+      a {
+        text-decoration: none;
+        color: #567e25;
+      }
+
+      table {
+        width: 100%;
+        font-size: 80%;
+        border-collapse: collapse;
+      }
+
+      thead {
+        font-weight: 700;
+        background-color: #dcdcdc;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #fbfbfb;
+      }
+
+      td {
+        border: 1px solid #ccc;
+        padding: 0.5ex 2ex;
+      }
+
+      td p {
+        text-indent: 1em;
+        margin: 0;
+      }
+
+      td p:nth-child(1) {
+        text-indent: 0;  
+      }
+
+       
+      .field-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .field-table td:nth-child(3) {  
+        width: 6em;
+      }
+      .field-table td:nth-child(4) {  
+        width: auto;
+      }
+
+       
+      .extension-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(3) {  
+        width: 10em;
+      }
+      .extension-table td:nth-child(4) {  
+        width: 5em;
+      }
+      .extension-table td:nth-child(5) {  
+        width: auto;
+      }
+
+       
+      .enum-table td:nth-child(1) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(2) {  
+        width: 10em;
+      }
+      .enum-table td:nth-child(3) {  
+        width: auto;
+      }
+
+       
+      .scalar-value-types-table tr {
+        height: 3em;
+      }
+
+       
+      #toc-container ul {
+        list-style-type: none;
+        padding-left: 1em;
+        line-height: 180%;
+        margin: 0;
+      }
+      #toc > li > a {
+        font-weight: bold;
+      }
+
+       
+      .file-heading {
+        width: 100%;
+        display: table;
+        border-bottom: 1px solid #aaa;
+        margin: 4em 0 1.5em 0;
+      }
+      .file-heading h2 {
+        border: none;
+        display: table-cell;
+      }
+      .file-heading a {
+        text-align: right;
+        display: table-cell;
+      }
+
+       
+      .badge {
+        width: 1.6em;
+        height: 1.6em;
+        display: inline-block;
+
+        line-height: 1.6em;
+        text-align: center;
+        font-weight: bold;
+        font-size: 60%;
+
+        color: #89ba48;
+        background-color: #dff0c8;
+
+        margin: 0.5ex 1em 0.5ex -1em;
+        border: 1px solid #fbfbfb;
+        border-radius: 1ex;
+      }
+    </style>
+
+    
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+  </head>
+
+  <body>
+
+    <h1 id="title">Protocol Documentation</h1>
+
+    <h2>Table of Contents</h2>
+
+    <div id="toc-container">
+      <ul id="toc">
+        
+          
+          <li>
+            <a href="#auth.proto">auth.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#goph.keeper.v1.LoginRequest"><span class="badge">M</span>LoginRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.LoginResponse"><span class="badge">M</span>LoginResponse</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#goph.keeper.v1.Auth"><span class="badge">S</span>Auth</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#data.proto">data.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#goph.keeper.v1.Binary"><span class="badge">M</span>Binary</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.Card"><span class="badge">M</span>Card</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.Credentials"><span class="badge">M</span>Credentials</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.Text"><span class="badge">M</span>Text</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#secrets.proto">secrets.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#goph.keeper.v1.CreateSecretRequest"><span class="badge">M</span>CreateSecretRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.CreateSecretResponse"><span class="badge">M</span>CreateSecretResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.DeleteSecretRequest"><span class="badge">M</span>DeleteSecretRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.DeleteSecretResponse"><span class="badge">M</span>DeleteSecretResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.GetSecretRequest"><span class="badge">M</span>GetSecretRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.GetSecretResponse"><span class="badge">M</span>GetSecretResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.ListSecretsRequest"><span class="badge">M</span>ListSecretsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.ListSecretsResponse"><span class="badge">M</span>ListSecretsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.Secret"><span class="badge">M</span>Secret</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.UpdateSecretRequest"><span class="badge">M</span>UpdateSecretRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.UpdateSecretResponse"><span class="badge">M</span>UpdateSecretResponse</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#goph.keeper.v1.DataKind"><span class="badge">E</span>DataKind</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#goph.keeper.v1.Secrets"><span class="badge">S</span>Secrets</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#users.proto">users.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#goph.keeper.v1.RegisterUserRequest"><span class="badge">M</span>RegisterUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#goph.keeper.v1.RegisterUserResponse"><span class="badge">M</span>RegisterUserResponse</a>
+                </li>
+              
+              
+              
+              
+                <li>
+                  <a href="#goph.keeper.v1.Users"><span class="badge">S</span>Users</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+        <li><a href="#scalar-value-types">Scalar Value Types</a></li>
+      </ul>
+    </div>
+
+    
+      
+      <div class="file-heading">
+        <h2 id="auth.proto">auth.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="goph.keeper.v1.LoginRequest">LoginRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Name of a user. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>security_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Hashed encryption key generated by client. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.LoginResponse">LoginResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>user_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Unique used ID in UUIDv4 form. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JWT access token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="goph.keeper.v1.Auth">Auth</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Login</td>
+                <td><a href="#goph.keeper.v1.LoginRequest">LoginRequest</a></td>
+                <td><a href="#goph.keeper.v1.LoginResponse">LoginResponse</a></td>
+                <td><p>Authenticate a user.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="data.proto">data.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="goph.keeper.v1.Binary">Binary</h3>
+        <p>Arbitrary binary data.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>binary</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Binary data, limited to 4Kb. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.Card">Card</h3>
+        <p>Bank card info.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Card number. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expiration</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Expiration date. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>holder</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Card holder name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cvv</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>Card verification value. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.Credentials">Credentials</h3>
+        <p>Authentication credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>login</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Login value. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Password value. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.Text">Text</h3>
+        <p>Arbitrary text data.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>text</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Text data, limited to 4Kb. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="secrets.proto">secrets.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="goph.keeper.v1.CreateSecretRequest">CreateSecretRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Name of a secret. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>metadata</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Arbitrary description data encrypted by client. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kind</td>
+                  <td><a href="#goph.keeper.v1.DataKind">DataKind</a></td>
+                  <td></td>
+                  <td><p>Type of stored data. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Actual secret data encrypted by client, see data.proto. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.CreateSecretResponse">CreateSecretResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>ID of a secret in UUIDv4 form. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.DeleteSecretRequest">DeleteSecretRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>ID of a secret in UUIDv4 form. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.DeleteSecretResponse">DeleteSecretResponse</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="goph.keeper.v1.GetSecretRequest">GetSecretRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>ID of a secret in UUIDv4 form. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.GetSecretResponse">GetSecretResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>secret</td>
+                  <td><a href="#goph.keeper.v1.Secret">Secret</a></td>
+                  <td></td>
+                  <td><p>Secret info. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Actual encrypted secret data, see data.proto. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.ListSecretsRequest">ListSecretsRequest</h3>
+        <p></p>
+
+        
+
+        
+      
+        <h3 id="goph.keeper.v1.ListSecretsResponse">ListSecretsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>secrets</td>
+                  <td><a href="#goph.keeper.v1.Secret">Secret</a></td>
+                  <td>repeated</td>
+                  <td><p>List of secrets created by current user. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.Secret">Secret</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>ID of a secret in UUIDv4 form. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Name of a secret. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kind</td>
+                  <td><a href="#goph.keeper.v1.DataKind">DataKind</a></td>
+                  <td></td>
+                  <td><p>Type of stored data. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>metadata</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Arbitrary encrypted description (activation codes, bank names etc). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.UpdateSecretRequest">UpdateSecretRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>Specifies what values should be changed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Name of a secret. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>metadata</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Arbitrary description data encrypted by client. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>data</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p>Actual secret data encrypted by client, see data.proto. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.UpdateSecretResponse">UpdateSecretResponse</h3>
+        <p></p>
+
+        
+
+        
+      
+
+      
+        <h3 id="goph.keeper.v1.DataKind">DataKind</h3>
+        <p>Type of stored data.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>BINARY</td>
+                <td>0</td>
+                <td><p>Arbitrary binary data.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TEXT</td>
+                <td>1</td>
+                <td><p>Arbitrary text data.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CREDENTIALS</td>
+                <td>2</td>
+                <td><p>Authentication credentials.</p></td>
+              </tr>
+            
+              <tr>
+                <td>CARD</td>
+                <td>3</td>
+                <td><p>Bank card info.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="goph.keeper.v1.Secrets">Secrets</h3>
+        <p>All commands require valid access_token passed in metadata.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Create</td>
+                <td><a href="#goph.keeper.v1.CreateSecretRequest">CreateSecretRequest</a></td>
+                <td><a href="#goph.keeper.v1.CreateSecretResponse">CreateSecretResponse</a></td>
+                <td><p>Store new secret.</p></td>
+              </tr>
+            
+              <tr>
+                <td>List</td>
+                <td><a href="#goph.keeper.v1.ListSecretsRequest">ListSecretsRequest</a></td>
+                <td><a href="#goph.keeper.v1.ListSecretsResponse">ListSecretsResponse</a></td>
+                <td><p>List brief secrets without data for the current user.</p></td>
+              </tr>
+            
+              <tr>
+                <td>Get</td>
+                <td><a href="#goph.keeper.v1.GetSecretRequest">GetSecretRequest</a></td>
+                <td><a href="#goph.keeper.v1.GetSecretResponse">GetSecretResponse</a></td>
+                <td><p>Get a secret with data.</p></td>
+              </tr>
+            
+              <tr>
+                <td>Update</td>
+                <td><a href="#goph.keeper.v1.UpdateSecretRequest">UpdateSecretRequest</a></td>
+                <td><a href="#goph.keeper.v1.UpdateSecretResponse">UpdateSecretResponse</a></td>
+                <td><p>Change a secret and/or stored data.</p></td>
+              </tr>
+            
+              <tr>
+                <td>Delete</td>
+                <td><a href="#goph.keeper.v1.DeleteSecretRequest">DeleteSecretRequest</a></td>
+                <td><a href="#goph.keeper.v1.DeleteSecretResponse">DeleteSecretResponse</a></td>
+                <td><p>Remove a secret.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="users.proto">users.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="goph.keeper.v1.RegisterUserRequest">RegisterUserRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Name of a user. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>security_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Hashed encryption key generated by client. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="goph.keeper.v1.RegisterUserResponse">RegisterUserResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>user_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Unique user ID in UUIDv4 form. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>access_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>JWT access token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+        <h3 id="goph.keeper.v1.Users">Users</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>Register</td>
+                <td><a href="#goph.keeper.v1.RegisterUserRequest">RegisterUserRequest</a></td>
+                <td><a href="#goph.keeper.v1.RegisterUserResponse">RegisterUserResponse</a></td>
+                <td><p>Register new user.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+    
+
+    <h2 id="scalar-value-types">Scalar Value Types</h2>
+    <table class="scalar-value-types-table">
+      <thead>
+        <tr><td>.proto Type</td><td>Notes</td><td>C++</td><td>Java</td><td>Python</td><td>Go</td><td>C#</td><td>PHP</td><td>Ruby</td></tr>
+      </thead>
+      <tbody>
+        
+          <tr id="double">
+            <td>double</td>
+            <td></td>
+            <td>double</td>
+            <td>double</td>
+            <td>float</td>
+            <td>float64</td>
+            <td>double</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="float">
+            <td>float</td>
+            <td></td>
+            <td>float</td>
+            <td>float</td>
+            <td>float</td>
+            <td>float32</td>
+            <td>float</td>
+            <td>float</td>
+            <td>Float</td>
+          </tr>
+        
+          <tr id="int32">
+            <td>int32</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint32 instead.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="int64">
+            <td>int64</td>
+            <td>Uses variable-length encoding. Inefficient for encoding negative numbers – if your field is likely to have negative values, use sint64 instead.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="uint32">
+            <td>uint32</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int/long</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="uint64">
+            <td>uint64</td>
+            <td>Uses variable-length encoding.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint32">
+            <td>sint32</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int32s.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sint64">
+            <td>sint64</td>
+            <td>Uses variable-length encoding. Signed int value. These more efficiently encode negative numbers than regular int64s.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="fixed32">
+            <td>fixed32</td>
+            <td>Always four bytes. More efficient than uint32 if values are often greater than 2^28.</td>
+            <td>uint32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>uint32</td>
+            <td>uint</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="fixed64">
+            <td>fixed64</td>
+            <td>Always eight bytes. More efficient than uint64 if values are often greater than 2^56.</td>
+            <td>uint64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>uint64</td>
+            <td>ulong</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="sfixed32">
+            <td>sfixed32</td>
+            <td>Always four bytes.</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>int</td>
+            <td>int32</td>
+            <td>int</td>
+            <td>integer</td>
+            <td>Bignum or Fixnum (as required)</td>
+          </tr>
+        
+          <tr id="sfixed64">
+            <td>sfixed64</td>
+            <td>Always eight bytes.</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>int/long</td>
+            <td>int64</td>
+            <td>long</td>
+            <td>integer/string</td>
+            <td>Bignum</td>
+          </tr>
+        
+          <tr id="bool">
+            <td>bool</td>
+            <td></td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>boolean</td>
+            <td>bool</td>
+            <td>bool</td>
+            <td>boolean</td>
+            <td>TrueClass/FalseClass</td>
+          </tr>
+        
+          <tr id="string">
+            <td>string</td>
+            <td>A string must always contain UTF-8 encoded or 7-bit ASCII text.</td>
+            <td>string</td>
+            <td>String</td>
+            <td>str/unicode</td>
+            <td>string</td>
+            <td>string</td>
+            <td>string</td>
+            <td>String (UTF-8)</td>
+          </tr>
+        
+          <tr id="bytes">
+            <td>bytes</td>
+            <td>May contain any arbitrary sequence of bytes.</td>
+            <td>string</td>
+            <td>ByteString</td>
+            <td>str</td>
+            <td>[]byte</td>
+            <td>ByteString</td>
+            <td>string</td>
+            <td>String (ASCII-8BIT)</td>
+          </tr>
+        
+      </tbody>
+    </table>
+  </body>
+</html>
+

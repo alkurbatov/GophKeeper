@@ -1,0 +1,9 @@
+*.md
+.*
+LICENSE
+api/
+build/
+coverage*
+deployments/
+dist/
+docs/
