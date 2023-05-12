@@ -38,7 +38,6 @@ func doPull(cmd *cobra.Command, args []string) error {
 		return entity.Unwrap(err)
 	}
 
-	t := tabby.New()
 	header := []any{"ID", "Name", "Kind", "Description"}
 	line := []any{
 		secret.GetId(),
@@ -46,21 +45,27 @@ func doPull(cmd *cobra.Command, args []string) error {
 		secret.GetKind().String(),
 		string(secret.GetMetadata()),
 	}
+	messages := make([]string, 0)
 
 	switch d := data.(type) {
 	case *goph.Binary:
-		t.AddHeader(header...)
-		t.AddLine(line...)
-		t.Print()
+		messages = append(messages, string(d.Binary))
 
-		clientApp.Log.Info().Msg(string(d.Binary))
+	case *goph.Credentials:
+		header = append(header, "Login", "Password")
+		line = append(line, d.Login, d.Password)
 
 	case *goph.Text:
-		t.AddHeader(header...)
-		t.AddLine(line...)
-		t.Print()
+		messages = append(messages, d.Text)
+	}
 
-		clientApp.Log.Info().Msg(d.Text)
+	t := tabby.New()
+	t.AddHeader(header...)
+	t.AddLine(line...)
+	t.Print()
+
+	for _, msg := range messages {
+		clientApp.Log.Info().Msg(msg)
 	}
 
 	return nil

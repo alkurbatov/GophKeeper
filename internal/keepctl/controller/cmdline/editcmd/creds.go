@@ -8,33 +8,41 @@ import (
 )
 
 var (
-	binary string
+	login    string
+	password string
 
-	binCmd = &cobra.Command{
-		Use:   "bin [secret id]",
-		Short: "Edit stored binary data",
+	credsCmd = &cobra.Command{
+		Use:   "creds [secret id]",
+		Short: "Edit stored credentials",
 		Args:  cobra.MinimumNArgs(1),
-		RunE:  doEditBin,
+		RunE:  doEditCreds,
 	}
 )
 
 func init() {
-	binCmd.PersistentFlags().StringVarP(
-		&binary,
-		"bin",
-		"b",
+	credsCmd.PersistentFlags().StringVarP(
+		&login,
+		"login",
+		"l",
 		"",
-		"Change binary data",
+		"Change login or username",
+	)
+	credsCmd.PersistentFlags().StringVarP(
+		&password,
+		"password",
+		"p",
+		"",
+		"Change password",
 	)
 }
 
-func doEditBin(cmd *cobra.Command, args []string) error {
+func doEditCreds(cmd *cobra.Command, args []string) error {
 	id, err := uuid.FromString(args[0])
 	if err != nil {
 		return err
 	}
 
-	if secretName == "" && description == "" && !noDescription && binary == "" {
+	if secretName == "" && description == "" && !noDescription && login == "" && password == "" {
 		return errFlagsRequired
 	}
 
@@ -43,14 +51,15 @@ func doEditBin(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := clientApp.Usecases.Secrets.EditBinary(
+	if err := clientApp.Usecases.Secrets.EditCreds(
 		cmd.Context(),
 		clientApp.AccessToken,
 		id,
 		secretName,
 		description,
 		noDescription,
-		[]byte(binary),
+		login,
+		password,
 	); err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")
 

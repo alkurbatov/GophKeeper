@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -13,6 +14,8 @@ import (
 )
 
 var _ Secrets = (*SecretsUseCase)(nil)
+
+var errKindMismatch = errors.New("secret kind doesn't match expectations")
 
 // SecretsUseCase contains business logic related to secrets management.
 type SecretsUseCase struct {
@@ -70,6 +73,19 @@ func (uc *SecretsUseCase) PushBinary(
 	}
 
 	return uc.push(ctx, token, name, goph.DataKind_BINARY, description, data)
+}
+
+// PushCreds creates new secret containing credentials.
+func (uc *SecretsUseCase) PushCreds(
+	ctx context.Context,
+	token, name, description, login, password string,
+) (uuid.UUID, error) {
+	data := &goph.Credentials{
+		Login:    login,
+		Password: password,
+	}
+
+	return uc.push(ctx, token, name, goph.DataKind_CREDENTIALS, description, data)
 }
 
 // PushText creates new secret with arbitrary text.
@@ -161,6 +177,49 @@ func (uc *SecretsUseCase) EditBinary(
 		data = &goph.Binary{
 			Binary: binary,
 		}
+	}
+
+	return uc.update(ctx, token, id, name, description, noDescription, data)
+}
+
+// EditCreds changes parameters of stored credentials.
+func (uc *SecretsUseCase) EditCreds(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+	name, description string,
+	noDescription bool,
+	login, password string,
+) error {
+	if login == "" && password == "" {
+		return uc.update(ctx, token, id, name, description, noDescription, nil)
+	}
+
+	if login != "" && password != "" {
+		data := &goph.Credentials{
+			Login:    login,
+			Password: password,
+		}
+
+		return uc.update(ctx, token, id, name, description, noDescription, data)
+	}
+
+	_, msg, err := uc.Get(ctx, token, id)
+	if err != nil {
+		return fmt.Errorf("SecretsUseCase - EditCreds - uc.Get: %w", err)
+	}
+
+	data, ok := msg.(*goph.Credentials)
+	if !ok {
+		return fmt.Errorf("SecretsUseCase - EditCreds - msg.(*goph.Credentials): %w", errKindMismatch)
+	}
+
+	if login != "" {
+		data.Login = login
+	}
+
+	if password != "" {
+		data.Password = password
 	}
 
 	return uc.update(ctx, token, id, name, description, noDescription, data)

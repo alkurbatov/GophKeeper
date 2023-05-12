@@ -16,6 +16,7 @@ type Auth interface {
 
 type Secrets interface {
 	PushBinary(ctx context.Context, token, name, description string, binary []byte) (uuid.UUID, error)
+	PushCreds(ctx context.Context, token, name, description, login, password string) (uuid.UUID, error)
 	PushText(ctx context.Context, token, name, description, text string) (uuid.UUID, error)
 
 	List(ctx context.Context, token string) ([]*goph.Secret, error)
@@ -28,6 +29,15 @@ type Secrets interface {
 		name, description string,
 		noDescription bool,
 		binary []byte,
+	) error
+
+	EditCreds(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name, description string,
+		noDescription bool,
+		login, password string,
 	) error
 
 	EditText(

@@ -12,7 +12,7 @@ var (
 
 	textCmd = &cobra.Command{
 		Use:   "text [secret id]",
-		Short: "Edit stored text secret",
+		Short: "Edit stored text",
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  doEditText,
 	}
@@ -24,7 +24,7 @@ func init() {
 		"text",
 		"t",
 		"",
-		"Stored text",
+		"Change text",
 	)
 }
 
