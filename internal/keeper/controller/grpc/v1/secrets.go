@@ -156,6 +156,10 @@ func (s SecretsServer) Update(
 			return nil, status.Errorf(codes.NotFound, entity.ErrSecretNotFound.Error())
 		}
 
+		if errors.Is(err, entity.ErrSecretNameConflict) {
+			return nil, status.Errorf(codes.AlreadyExists, entity.ErrSecretNameConflict.Error())
+		}
+
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 

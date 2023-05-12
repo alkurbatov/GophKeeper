@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrSecretNotFound = errors.New("secret not found")
-	ErrSecretExists   = errors.New("secret already exists")
+	ErrSecretNotFound     = errors.New("secret not found")
+	ErrSecretExists       = errors.New("secret already exists")
+	ErrSecretNameConflict = errors.New("secret with such name already exists")
 )
 
 // Secret represents full secret info stored in the service.

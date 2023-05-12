@@ -100,7 +100,7 @@ func TestCreateSecret(t *testing.T) {
 	require.NoError(t, m.ExpectationsWereMet())
 }
 
-func TestCreateSecretFailure(t *testing.T) {
+func TestCreateSecretOnDBFailure(t *testing.T) {
 	tt := []struct {
 		name     string
 		err      error
@@ -377,28 +377,50 @@ func TestUpdateUnexistingSecret(t *testing.T) {
 }
 
 func TestUpdateSecretOnDBFailure(t *testing.T) {
-	owner := uuid.NewV4()
-	id := uuid.NewV4()
+	tt := []struct {
+		name     string
+		err      error
+		expected error
+	}{
+		{
+			name:     "Update secret fails if new name conflicts with other secret",
+			err:      errUniqueViolation,
+			expected: entity.ErrSecretNameConflict,
+		},
+		{
+			name:     "Update secret fails on unexpected error",
+			err:      gophtest.ErrUnexpected,
+			expected: gophtest.ErrUnexpected,
+		},
+	}
 
-	m := newPoolMock(t)
-	m.ExpectBeginTx(postgres.DefaultTxOptions)
-	m.ExpectExec("UPDATE").
-		WithArgs(gophtest.SecretName, id, owner).
-		WillReturnError(gophtest.ErrUnexpected)
-	m.ExpectRollback()
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			owner := uuid.NewV4()
+			id := uuid.NewV4()
 
-	err := doUpdateSecret(
-		t,
-		owner,
-		id,
-		[]string{"name"},
-		gophtest.SecretName,
-		nil,
-		nil,
-		m,
-	)
+			m := newPoolMock(t)
+			m.ExpectBeginTx(postgres.DefaultTxOptions)
+			m.ExpectExec("UPDATE").
+				WithArgs(gophtest.SecretName, id, owner).
+				WillReturnError(tc.err)
+			m.ExpectRollback()
 
-	require.ErrorIs(t, err, gophtest.ErrUnexpected)
+			err := doUpdateSecret(
+				t,
+				owner,
+				id,
+				[]string{"name"},
+				gophtest.SecretName,
+				nil,
+				nil,
+				m,
+			)
+
+			require.ErrorIs(t, err, tc.expected)
+			require.NoError(t, m.ExpectationsWereMet())
+		})
+	}
 }
 
 func TestDeleteSecret(t *testing.T) {

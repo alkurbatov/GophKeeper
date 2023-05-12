@@ -603,6 +603,11 @@ func TestUpdateSecretOnUsecaseFailure(t *testing.T) {
 			expected: codes.NotFound,
 		},
 		{
+			name:     "Update secret fails if secret with provided name already exists",
+			ucErr:    entity.ErrSecretNameConflict,
+			expected: codes.AlreadyExists,
+		},
+		{
 			name:     "Update secret fails on expected error",
 			ucErr:    gophtest.ErrUnexpected,
 			expected: codes.Internal,

@@ -120,7 +120,7 @@ func (r *SecretsRepo) Get(
 }
 
 // Update changes secret info and data.
-func (r *SecretsRepo) Update(
+func (r *SecretsRepo) Update( //nolint:cyclop,gocognit,gocyclo // update is complex operation
 	ctx context.Context,
 	owner, id uuid.UUID,
 	changed []string,
@@ -167,6 +167,10 @@ func (r *SecretsRepo) Update(
 			values...,
 		)
 		if err != nil {
+			if postgres.IsEntityExists(err) {
+				return entity.ErrSecretNameConflict
+			}
+
 			return fmt.Errorf("SecretsRepo - Update - tx.Exec: %w", err)
 		}
 
