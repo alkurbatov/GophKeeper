@@ -11,7 +11,7 @@ var (
 
 var PushCmd = &cobra.Command{
 	Use:   "push",
-	Short: "Push secret data to the keeper service",
+	Short: "Push secret to the Keeper service",
 }
 
 func init() {
@@ -27,10 +27,10 @@ func init() {
 		"description",
 		"d",
 		"",
-		"Additional description of stored data (activation codes, bank names etc)",
+		"Additional description of stored data (activation codes, names of banks etc)",
 	)
 
-	PushCmd.MarkFlagRequired("name")
+	PushCmd.MarkPersistentFlagRequired("name")
 
 	PushCmd.AddCommand(binCmd)
 	PushCmd.AddCommand(credsCmd)

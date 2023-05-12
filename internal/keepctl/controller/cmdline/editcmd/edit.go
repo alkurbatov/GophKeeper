@@ -25,14 +25,14 @@ func init() {
 		"name",
 		"n",
 		"",
-		"Name of the stored secret",
+		"New name of the secret",
 	)
 	EditCmd.PersistentFlags().StringVarP(
 		&description,
 		"description",
 		"d",
 		"",
-		"Additional description of stored data (activation codes, bank names etc)",
+		"New description of secret (activation codes, names of banks etc)",
 	)
 	EditCmd.PersistentFlags().BoolVar(
 		&noDescription,

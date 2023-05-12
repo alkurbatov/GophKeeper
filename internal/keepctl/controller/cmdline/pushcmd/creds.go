@@ -6,14 +6,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var credsCmd = &cobra.Command{
-	Use:   "creds [login] [password]",
-	Short: "Push login and password",
-	Args:  cobra.MinimumNArgs(2), //nolint:gomnd // count of required args
-	RunE:  doPushCreds,
+var (
+	login    string
+	password string
+
+	credsCmd = &cobra.Command{
+		Use:   "creds [flags]",
+		Short: "Save credentials",
+		RunE:  doPushCreds,
+	}
+)
+
+func init() {
+	credsCmd.Flags().StringVarP(
+		&login,
+		"login",
+		"l",
+		"",
+		"Login or username to save",
+	)
+	credsCmd.Flags().StringVarP(
+		&password,
+		"password",
+		"p",
+		"",
+		"Password to save",
+	)
+
+	credsCmd.MarkFlagRequired("login")
+	credsCmd.MarkFlagRequired("password")
 }
 
-func doPushCreds(cmd *cobra.Command, args []string) error {
+func doPushCreds(cmd *cobra.Command, _args []string) error {
 	clientApp, err := app.FromContext(cmd.Context())
 	if err != nil {
 		return err
@@ -24,8 +48,8 @@ func doPushCreds(cmd *cobra.Command, args []string) error {
 		clientApp.AccessToken,
 		secretName,
 		description,
-		args[0],
-		args[1],
+		login,
+		password,
 	)
 	if err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")

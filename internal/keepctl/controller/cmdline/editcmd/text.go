@@ -11,20 +11,20 @@ var (
 	text string
 
 	textCmd = &cobra.Command{
-		Use:   "text [secret id]",
-		Short: "Edit stored text",
+		Use:   "text [secret id] [flags]",
+		Short: "Edit text secret",
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  doEditText,
 	}
 )
 
 func init() {
-	textCmd.PersistentFlags().StringVarP(
+	textCmd.Flags().StringVarP(
 		&text,
 		"text",
 		"t",
 		"",
-		"Change text",
+		"New text",
 	)
 }
 

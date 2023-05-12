@@ -7,7 +7,7 @@ import (
 )
 
 var registerCmd = &cobra.Command{
-	Use:   "register",
+	Use:   "register [flags]",
 	Short: "Register a new user",
 	RunE:  doRegister,
 }

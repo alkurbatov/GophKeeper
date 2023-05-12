@@ -8,8 +8,8 @@ import (
 )
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [secret id]",
-	Short: "Delete secret",
+	Use:   "delete [secret id] [flags]",
+	Short: "Delete the secret",
 	Args:  cobra.MinimumNArgs(1),
 	RunE:  doDelete,
 }

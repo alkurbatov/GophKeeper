@@ -6,11 +6,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var textCmd = &cobra.Command{
-	Use:   "text [data]",
-	Short: "Push arbitrary text data",
-	Args:  cobra.MinimumNArgs(1),
-	RunE:  doPushText,
+var (
+	text string
+
+	textCmd = &cobra.Command{
+		Use:   "text [flags]",
+		Short: "Push arbitrary text",
+		RunE:  doPushText,
+	}
+)
+
+func init() {
+	textCmd.Flags().StringVarP(
+		&text,
+		"text",
+		"t",
+		"",
+		"Text to save",
+	)
+
+	textCmd.MarkFlagRequired("text")
 }
 
 func doPushText(cmd *cobra.Command, args []string) error {
@@ -24,7 +39,7 @@ func doPushText(cmd *cobra.Command, args []string) error {
 		clientApp.AccessToken,
 		secretName,
 		description,
-		args[0],
+		text,
 	)
 	if err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")

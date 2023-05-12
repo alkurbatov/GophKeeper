@@ -8,8 +8,8 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List secrets for current user",
+	Use:   "list [flags]",
+	Short: "List secrets of current user (without data)",
 	RunE:  doList,
 }
 

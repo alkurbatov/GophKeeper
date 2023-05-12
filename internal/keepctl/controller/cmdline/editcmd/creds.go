@@ -12,27 +12,27 @@ var (
 	password string
 
 	credsCmd = &cobra.Command{
-		Use:   "creds [secret id]",
-		Short: "Edit stored credentials",
+		Use:   "creds [secret id] [flags]",
+		Short: "Edit stored credentials secret",
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  doEditCreds,
 	}
 )
 
 func init() {
-	credsCmd.PersistentFlags().StringVarP(
+	credsCmd.Flags().StringVarP(
 		&login,
 		"login",
 		"l",
 		"",
-		"Change login or username",
+		"New login or username",
 	)
-	credsCmd.PersistentFlags().StringVarP(
+	credsCmd.Flags().StringVarP(
 		&password,
 		"password",
 		"p",
 		"",
-		"Change password",
+		"New password",
 	)
 }
 

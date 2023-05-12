@@ -8,23 +8,23 @@ import (
 )
 
 var (
-	binary string
+	data string
 
 	binCmd = &cobra.Command{
-		Use:   "bin [secret id]",
-		Short: "Edit stored binary data",
+		Use:   "bin [secret id] [flags]",
+		Short: "Edit stored binary secret",
 		Args:  cobra.MinimumNArgs(1),
 		RunE:  doEditBin,
 	}
 )
 
 func init() {
-	binCmd.PersistentFlags().StringVarP(
-		&binary,
-		"bin",
+	binCmd.Flags().StringVarP(
+		&data,
+		"binary-data",
 		"b",
 		"",
-		"Change binary data",
+		"New binary data",
 	)
 }
 
@@ -34,7 +34,7 @@ func doEditBin(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if secretName == "" && description == "" && !noDescription && binary == "" {
+	if secretName == "" && description == "" && !noDescription && data == "" {
 		return errFlagsRequired
 	}
 
@@ -50,7 +50,7 @@ func doEditBin(cmd *cobra.Command, args []string) error {
 		secretName,
 		description,
 		noDescription,
-		[]byte(binary),
+		[]byte(data),
 	); err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")
 

@@ -10,8 +10,8 @@ import (
 )
 
 var pullCmd = &cobra.Command{
-	Use:   "pull [secret id]",
-	Short: "Pull full secret",
+	Use:   "pull [secret id] [flags]",
+	Short: "Show the secret and stored data",
 	Args:  cobra.MinimumNArgs(1),
 	RunE:  doPull,
 }

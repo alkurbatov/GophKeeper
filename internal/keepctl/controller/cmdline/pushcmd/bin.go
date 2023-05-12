@@ -6,14 +6,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var binCmd = &cobra.Command{
-	Use:   "bin [data]",
-	Short: "Push arbitrary binary data",
-	Args:  cobra.MinimumNArgs(1),
-	RunE:  doPushBinary,
+var (
+	data string
+
+	binCmd = &cobra.Command{
+		Use:   "bin [flags]",
+		Short: "Save arbitrary binary data",
+		RunE:  doPushBinary,
+	}
+)
+
+func init() {
+	binCmd.Flags().StringVarP(
+		&data,
+		"binary-data",
+		"b",
+		"",
+		"Binary data to save",
+	)
+
+	binCmd.MarkFlagRequired("data")
 }
 
-func doPushBinary(cmd *cobra.Command, args []string) error {
+func doPushBinary(cmd *cobra.Command, _args []string) error {
 	clientApp, err := app.FromContext(cmd.Context())
 	if err != nil {
 		return err
@@ -24,7 +39,7 @@ func doPushBinary(cmd *cobra.Command, args []string) error {
 		clientApp.AccessToken,
 		secretName,
 		description,
-		[]byte(args[0]),
+		[]byte(data),
 	)
 	if err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")
