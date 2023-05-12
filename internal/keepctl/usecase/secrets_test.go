@@ -12,6 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 func doPushText(t *testing.T, mockRV uuid.UUID, mockErr error) (uuid.UUID, error) {
@@ -70,7 +71,7 @@ func doGetSecret(
 	mockSecret *goph.Secret,
 	mockData []byte,
 	mockErr error,
-) (*goph.Secret, []byte, error) {
+) (*goph.Secret, proto.Message, error) {
 	t.Helper()
 
 	id := uuid.NewV4()
@@ -258,7 +259,7 @@ func TestGetSecret(t *testing.T) {
 	tt := []struct {
 		name   string
 		secret *goph.Secret
-		data   []byte
+		text   string
 	}{
 		{
 			name: "Get secret text secret",
@@ -268,7 +269,7 @@ func TestGetSecret(t *testing.T) {
 				Kind:     goph.DataKind_TEXT,
 				Metadata: []byte(gophtest.Metadata),
 			},
-			data: []byte(gophtest.TextData),
+			text: gophtest.TextData,
 		},
 		{
 			name: "Get secret without metadata",
@@ -278,7 +279,7 @@ func TestGetSecret(t *testing.T) {
 				Kind:     goph.DataKind_TEXT,
 				Metadata: []byte{},
 			},
-			data: []byte(gophtest.TextData),
+			text: gophtest.TextData,
 		},
 	}
 
@@ -297,14 +298,18 @@ func TestGetSecret(t *testing.T) {
 			mockSecret.Metadata, err = key.Encrypt(tc.secret.GetMetadata())
 			require.NoError(t, err)
 
-			mockData, err := key.Encrypt(tc.data)
+			msg := &goph.Text{Text: tc.text}
+			mockData, err := proto.Marshal(msg)
 			require.NoError(t, err)
 
-			secret, data, err := doGetSecret(t, mockSecret, mockData, nil)
+			encData, err := key.Encrypt(mockData)
+			require.NoError(t, err)
+
+			secret, data, err := doGetSecret(t, mockSecret, encData, nil)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.secret, secret)
-			require.Equal(t, tc.data, data)
+			require.Equal(t, tc.text, data.(*goph.Text).Text)
 		})
 	}
 }

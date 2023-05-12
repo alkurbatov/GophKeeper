@@ -6,25 +6,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var textCmd = &cobra.Command{
-	Use:   "text [data]",
-	Short: "Push arbitrary text data",
+var binCmd = &cobra.Command{
+	Use:   "bin [data]",
+	Short: "Push arbitrary binary data",
 	Args:  cobra.MinimumNArgs(1),
-	RunE:  doPushText,
+	RunE:  doPushBinary,
 }
 
-func doPushText(cmd *cobra.Command, args []string) error {
+func doPushBinary(cmd *cobra.Command, args []string) error {
 	clientApp, err := app.FromContext(cmd.Context())
 	if err != nil {
 		return err
 	}
 
-	id, err := clientApp.Usecases.Secrets.PushText(
+	id, err := clientApp.Usecases.Secrets.PushBinary(
 		cmd.Context(),
 		clientApp.AccessToken,
 		secretName,
 		description,
-		args[0],
+		[]byte(args[0]),
 	)
 	if err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")

@@ -20,7 +20,7 @@ message Text {
 // Arbitrary binary data.
 message Binary {
   // Binary data, limited to 4Kb.
-  string binary = 1;
+  bytes binary = 1;
 }
 
 // Bank card info.

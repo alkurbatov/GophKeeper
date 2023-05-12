@@ -7,7 +7,6 @@ import (
 	"github.com/cheynewallace/tabby"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/proto"
 )
 
 var pullCmd = &cobra.Command{
@@ -48,18 +47,20 @@ func doPull(cmd *cobra.Command, args []string) error {
 		string(secret.GetMetadata()),
 	}
 
-	switch secret.Kind { //nolint:gocritic,exhaustive // will be expanded later
-	case goph.DataKind_TEXT:
-		text := &goph.Text{}
-		if err := proto.Unmarshal(data, text); err != nil {
-			return err
-		}
-
+	switch d := data.(type) {
+	case *goph.Binary:
 		t.AddHeader(header...)
 		t.AddLine(line...)
-
 		t.Print()
-		clientApp.Log.Info().Msg(text.Text)
+
+		clientApp.Log.Info().Msg(string(d.Binary))
+
+	case *goph.Text:
+		t.AddHeader(header...)
+		t.AddLine(line...)
+		t.Print()
+
+		clientApp.Log.Info().Msg(d.Text)
 	}
 
 	return nil

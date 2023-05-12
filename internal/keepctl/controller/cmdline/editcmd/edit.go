@@ -44,4 +44,5 @@ func init() {
 	EditCmd.MarkFlagsMutuallyExclusive("description", "no-description")
 
 	EditCmd.AddCommand(textCmd)
+	EditCmd.AddCommand(binCmd)
 }

@@ -59,6 +59,19 @@ func (uc *SecretsUseCase) push(
 	return id, nil
 }
 
+// PushBinary creates new secret with arbitrary binary data.
+func (uc *SecretsUseCase) PushBinary(
+	ctx context.Context,
+	token, name, description string,
+	binary []byte,
+) (uuid.UUID, error) {
+	data := &goph.Binary{
+		Binary: binary,
+	}
+
+	return uc.push(ctx, token, name, goph.DataKind_BINARY, description, data)
+}
+
 // PushText creates new secret with arbitrary text.
 func (uc *SecretsUseCase) PushText(
 	ctx context.Context,
@@ -133,7 +146,27 @@ func (uc *SecretsUseCase) update(
 	return nil
 }
 
-// EditText changes parameters oif stored text secret.
+// EditBinary changes parameters of stored binary secret.
+func (uc *SecretsUseCase) EditBinary(
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+	name, description string,
+	noDescription bool,
+	binary []byte,
+) error {
+	var data *goph.Binary
+
+	if len(binary) != 0 {
+		data = &goph.Binary{
+			Binary: binary,
+		}
+	}
+
+	return uc.update(ctx, token, id, name, description, noDescription, data)
+}
+
+// EditText changes parameters of stored text secret.
 func (uc *SecretsUseCase) EditText(
 	ctx context.Context,
 	token string,
@@ -159,7 +192,7 @@ func (uc *SecretsUseCase) Get(
 	ctx context.Context,
 	token string,
 	id uuid.UUID,
-) (*goph.Secret, []byte, error) {
+) (*goph.Secret, proto.Message, error) {
 	secret, data, err := uc.secretsRepo.Get(ctx, token, id)
 	if err != nil {
 		return nil, nil, fmt.Errorf("SecretsUseCase - Get - uc.secretsRepo.Get: %w", err)
@@ -175,7 +208,27 @@ func (uc *SecretsUseCase) Get(
 		return nil, nil, fmt.Errorf("SecretsUseCase - Get - uc.key.Decrypt(data): %w", err)
 	}
 
-	return secret, decryptedData, nil
+	var msg proto.Message
+
+	switch secret.GetKind() {
+	case goph.DataKind_BINARY:
+		msg = &goph.Binary{}
+
+	case goph.DataKind_CARD:
+		msg = &goph.Card{}
+
+	case goph.DataKind_CREDENTIALS:
+		msg = &goph.Credentials{}
+
+	case goph.DataKind_TEXT:
+		msg = &goph.Text{}
+	}
+
+	if err := proto.Unmarshal(decryptedData, msg); err != nil {
+		return nil, nil, fmt.Errorf("SecretsUseCase - Get - proto.Unmarshal: %w", err)
+	}
+
+	return secret, msg, nil
 }
 
 // Delete removes user's secret.

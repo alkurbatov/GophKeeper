@@ -8,33 +8,33 @@ import (
 )
 
 var (
-	text string
+	binary string
 
-	textCmd = &cobra.Command{
-		Use:   "text [secret id]",
-		Short: "Edit stored text secret",
+	binCmd = &cobra.Command{
+		Use:   "bin [secret id]",
+		Short: "Edit stored binary data",
 		Args:  cobra.MinimumNArgs(1),
-		RunE:  doEditText,
+		RunE:  doEditBin,
 	}
 )
 
 func init() {
-	textCmd.PersistentFlags().StringVarP(
-		&text,
-		"text",
-		"t",
+	binCmd.PersistentFlags().StringVarP(
+		&binary,
+		"bin",
+		"b",
 		"",
-		"Stored text",
+		"Stored binary data",
 	)
 }
 
-func doEditText(cmd *cobra.Command, args []string) error {
+func doEditBin(cmd *cobra.Command, args []string) error {
 	id, err := uuid.FromString(args[0])
 	if err != nil {
 		return err
 	}
 
-	if secretName == "" && description == "" && !noDescription && text == "" {
+	if secretName == "" && description == "" && !noDescription && binary == "" {
 		return errFlagsRequired
 	}
 
@@ -43,14 +43,14 @@ func doEditText(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := clientApp.Usecases.Secrets.EditText(
+	if err := clientApp.Usecases.Secrets.EditBinary(
 		cmd.Context(),
 		clientApp.AccessToken,
 		id,
 		secretName,
 		description,
 		noDescription,
-		text,
+		[]byte(binary),
 	); err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")
 

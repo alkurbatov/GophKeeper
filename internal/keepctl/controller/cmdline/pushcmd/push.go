@@ -33,4 +33,5 @@ func init() {
 	PushCmd.MarkFlagRequired("name")
 
 	PushCmd.AddCommand(textCmd)
+	PushCmd.AddCommand(binCmd)
 }
