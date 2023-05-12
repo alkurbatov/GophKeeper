@@ -21,7 +21,7 @@ type Config struct {
 // commandline flags. The flags are read inderectly through binding in cobra.
 func New() *Config {
 	viper.SetDefault("address", "127.0.0.1:50051")
-	viper.SetDefault("virbose", false)
+	viper.SetDefault("verbose", false)
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
