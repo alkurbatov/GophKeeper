@@ -14,8 +14,16 @@ type Auth interface {
 	Login(ctx context.Context, username string, key entity.Key) (string, error)
 }
 
-type Secrets interface {
+type Secrets interface { //nolint:interfacebloat //no plans to split it right now
 	PushBinary(ctx context.Context, token, name, description string, binary []byte) (uuid.UUID, error)
+
+	PushCard(
+		ctx context.Context,
+		token, name, description string,
+		number, expiration, holder string,
+		cvv int32,
+	) (uuid.UUID, error)
+
 	PushCreds(ctx context.Context, token, name, description, login, password string) (uuid.UUID, error)
 	PushText(ctx context.Context, token, name, description, text string) (uuid.UUID, error)
 
@@ -29,6 +37,16 @@ type Secrets interface {
 		name, description string,
 		noDescription bool,
 		binary []byte,
+	) error
+
+	EditCard(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name, description string,
+		noDescription bool,
+		number, expiration, holder string,
+		cvv int32,
 	) error
 
 	EditCreds(

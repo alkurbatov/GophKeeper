@@ -30,7 +30,7 @@ func init() {
 	)
 }
 
-func doEditText(cmd *cobra.Command, args []string) error {
+func doEditText(cmd *cobra.Command, _args []string) error {
 	if secretName == "" && description == "" && !noDescription && text == "" {
 		return errFlagsRequired
 	}

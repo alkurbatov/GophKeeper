@@ -28,7 +28,7 @@ func init() {
 	textCmd.MarkFlagRequired("text")
 }
 
-func doPushText(cmd *cobra.Command, args []string) error {
+func doPushText(cmd *cobra.Command, _args []string) error {
 	id, err := clientApp.Usecases.Secrets.PushText(
 		cmd.Context(),
 		clientApp.AccessToken,

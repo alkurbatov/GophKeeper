@@ -49,14 +49,18 @@ func doPull(cmd *cobra.Command, args []string) error {
 
 	switch d := data.(type) {
 	case *goph.Binary:
-		messages = append(messages, string(d.Binary))
+		messages = append(messages, string(d.GetBinary()))
+
+	case *goph.Card:
+		header = append(header, "Number", "Expiration", "Holder", "CVV")
+		line = append(line, d.GetNumber(), d.GetExpiration(), d.GetHolder(), d.GetCvv())
 
 	case *goph.Credentials:
 		header = append(header, "Login", "Password")
-		line = append(line, d.Login, d.Password)
+		line = append(line, d.GetLogin(), d.GetPassword())
 
 	case *goph.Text:
-		messages = append(messages, d.Text)
+		messages = append(messages, d.GetText())
 	}
 
 	t := tabby.New()

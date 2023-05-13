@@ -36,6 +36,7 @@ func init() {
 	PushCmd.MarkPersistentFlagRequired("name")
 
 	PushCmd.AddCommand(binCmd)
+	PushCmd.AddCommand(cardCmd)
 	PushCmd.AddCommand(credsCmd)
 	PushCmd.AddCommand(textCmd)
 }

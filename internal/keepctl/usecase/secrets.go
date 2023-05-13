@@ -75,6 +75,23 @@ func (uc *SecretsUseCase) PushBinary(
 	return uc.push(ctx, token, name, goph.DataKind_BINARY, description, data)
 }
 
+// PushCard creates new secret containing bank card data.
+func (uc *SecretsUseCase) PushCard(
+	ctx context.Context,
+	token, name, description string,
+	number, expiration, holder string,
+	cvv int32,
+) (uuid.UUID, error) {
+	data := &goph.Card{
+		Number:     number,
+		Expiration: expiration,
+		Holder:     holder,
+		Cvv:        cvv,
+	}
+
+	return uc.push(ctx, token, name, goph.DataKind_CARD, description, data)
+}
+
 // PushCreds creates new secret containing credentials.
 func (uc *SecretsUseCase) PushCreds(
 	ctx context.Context,
@@ -186,6 +203,49 @@ func (uc *SecretsUseCase) EditBinary(
 	}
 
 	data.Binary = binary
+
+	return uc.update(ctx, token, id, name, description, noDescription, data)
+}
+
+// EditCard changes parameters of stored bank card.
+func (uc *SecretsUseCase) EditCard( //nolint:cyclop,gocyclo //needs simplification
+	ctx context.Context,
+	token string,
+	id uuid.UUID,
+	name, description string,
+	noDescription bool,
+	number, expiration, holder string,
+	cvv int32,
+) error {
+	if number == "" && expiration == "" && holder == "" && cvv == 0 {
+		return uc.update(ctx, token, id, name, description, noDescription, nil)
+	}
+
+	_, msg, err := uc.Get(ctx, token, id)
+	if err != nil {
+		return fmt.Errorf("SecretsUseCase - EditCard - uc.Get: %w", err)
+	}
+
+	data, ok := msg.(*goph.Card)
+	if !ok {
+		return fmt.Errorf("SecretsUseCase - EditCard - msg.(*goph.Card): %w", ErrKindMismatch)
+	}
+
+	if number != "" {
+		data.Number = number
+	}
+
+	if expiration != "" {
+		data.Expiration = expiration
+	}
+
+	if holder != "" {
+		data.Holder = holder
+	}
+
+	if cvv != 0 {
+		data.Cvv = cvv
+	}
 
 	return uc.update(ctx, token, id, name, description, noDescription, data)
 }
