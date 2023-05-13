@@ -1,7 +1,6 @@
 package pushcmd
 
 import (
-	"github.com/alkurbatov/goph-keeper/internal/keepctl/app"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
 	"github.com/spf13/cobra"
 )
@@ -10,9 +9,10 @@ var (
 	text string
 
 	textCmd = &cobra.Command{
-		Use:   "text [flags]",
-		Short: "Push arbitrary text",
-		RunE:  doPushText,
+		Use:     "text [flags]",
+		Short:   "Push arbitrary text",
+		PreRunE: preRun,
+		RunE:    doPushText,
 	}
 )
 
@@ -29,11 +29,6 @@ func init() {
 }
 
 func doPushText(cmd *cobra.Command, args []string) error {
-	clientApp, err := app.FromContext(cmd.Context())
-	if err != nil {
-		return err
-	}
-
 	id, err := clientApp.Usecases.Secrets.PushText(
 		cmd.Context(),
 		clientApp.AccessToken,

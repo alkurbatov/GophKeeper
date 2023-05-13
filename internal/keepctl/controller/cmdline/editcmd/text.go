@@ -1,9 +1,7 @@
 package editcmd
 
 import (
-	"github.com/alkurbatov/goph-keeper/internal/keepctl/app"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -11,10 +9,11 @@ var (
 	text string
 
 	textCmd = &cobra.Command{
-		Use:   "text [secret id] [flags]",
-		Short: "Edit text secret",
-		Args:  cobra.MinimumNArgs(1),
-		RunE:  doEditText,
+		Use:     "text [secret id] [flags]",
+		Short:   "Edit text secret",
+		Args:    cobra.MinimumNArgs(1),
+		PreRunE: preRun,
+		RunE:    doEditText,
 	}
 )
 
@@ -29,24 +28,14 @@ func init() {
 }
 
 func doEditText(cmd *cobra.Command, args []string) error {
-	id, err := uuid.FromString(args[0])
-	if err != nil {
-		return err
-	}
-
 	if secretName == "" && description == "" && !noDescription && text == "" {
 		return errFlagsRequired
-	}
-
-	clientApp, err := app.FromContext(cmd.Context())
-	if err != nil {
-		return err
 	}
 
 	if err := clientApp.Usecases.Secrets.EditText(
 		cmd.Context(),
 		clientApp.AccessToken,
-		id,
+		secretID,
 		secretName,
 		description,
 		noDescription,

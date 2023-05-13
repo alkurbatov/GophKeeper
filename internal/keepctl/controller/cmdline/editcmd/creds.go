@@ -1,9 +1,7 @@
 package editcmd
 
 import (
-	"github.com/alkurbatov/goph-keeper/internal/keepctl/app"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -12,10 +10,11 @@ var (
 	password string
 
 	credsCmd = &cobra.Command{
-		Use:   "creds [secret id] [flags]",
-		Short: "Edit stored credentials secret",
-		Args:  cobra.MinimumNArgs(1),
-		RunE:  doEditCreds,
+		Use:     "creds [secret id] [flags]",
+		Short:   "Edit stored credentials secret",
+		Args:    cobra.MinimumNArgs(1),
+		PreRunE: preRun,
+		RunE:    doEditCreds,
 	}
 )
 
@@ -36,25 +35,15 @@ func init() {
 	)
 }
 
-func doEditCreds(cmd *cobra.Command, args []string) error {
-	id, err := uuid.FromString(args[0])
-	if err != nil {
-		return err
-	}
-
+func doEditCreds(cmd *cobra.Command, _args []string) error {
 	if secretName == "" && description == "" && !noDescription && login == "" && password == "" {
 		return errFlagsRequired
-	}
-
-	clientApp, err := app.FromContext(cmd.Context())
-	if err != nil {
-		return err
 	}
 
 	if err := clientApp.Usecases.Secrets.EditCreds(
 		cmd.Context(),
 		clientApp.AccessToken,
-		id,
+		secretID,
 		secretName,
 		description,
 		noDescription,

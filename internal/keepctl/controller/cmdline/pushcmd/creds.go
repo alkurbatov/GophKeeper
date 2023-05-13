@@ -1,7 +1,6 @@
 package pushcmd
 
 import (
-	"github.com/alkurbatov/goph-keeper/internal/keepctl/app"
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
 	"github.com/spf13/cobra"
 )
@@ -11,9 +10,10 @@ var (
 	password string
 
 	credsCmd = &cobra.Command{
-		Use:   "creds [flags]",
-		Short: "Save credentials",
-		RunE:  doPushCreds,
+		Use:     "creds [flags]",
+		Short:   "Save credentials",
+		PreRunE: preRun,
+		RunE:    doPushCreds,
 	}
 )
 
@@ -38,11 +38,6 @@ func init() {
 }
 
 func doPushCreds(cmd *cobra.Command, _args []string) error {
-	clientApp, err := app.FromContext(cmd.Context())
-	if err != nil {
-		return err
-	}
-
 	id, err := clientApp.Usecases.Secrets.PushCreds(
 		cmd.Context(),
 		clientApp.AccessToken,
