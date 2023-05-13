@@ -15,7 +15,7 @@ import (
 
 var _ Secrets = (*SecretsUseCase)(nil)
 
-var errKindMismatch = errors.New("secret kind doesn't match expectations")
+var ErrKindMismatch = errors.New("secret kind doesn't match")
 
 // SecretsUseCase contains business logic related to secrets management.
 type SecretsUseCase struct {
@@ -130,7 +130,7 @@ func (uc *SecretsUseCase) update(
 ) error {
 	var encData []byte
 
-	if !reflect.ValueOf(data).IsNil() {
+	if data != nil && !reflect.ValueOf(data).IsNil() {
 		rawData, err := proto.Marshal(data)
 		if err != nil {
 			return fmt.Errorf("SecretsUseCase - update - proto.Marshal: %w", err)
@@ -171,13 +171,21 @@ func (uc *SecretsUseCase) EditBinary(
 	noDescription bool,
 	binary []byte,
 ) error {
-	var data *goph.Binary
-
-	if len(binary) != 0 {
-		data = &goph.Binary{
-			Binary: binary,
-		}
+	if len(binary) == 0 {
+		return uc.update(ctx, token, id, name, description, noDescription, nil)
 	}
+
+	_, msg, err := uc.Get(ctx, token, id)
+	if err != nil {
+		return fmt.Errorf("SecretsUseCase - EditBinary - uc.Get: %w", err)
+	}
+
+	data, ok := msg.(*goph.Binary)
+	if !ok {
+		return fmt.Errorf("SecretsUseCase - EditBinary - msg.(*goph.Binary): %w", ErrKindMismatch)
+	}
+
+	data.Binary = binary
 
 	return uc.update(ctx, token, id, name, description, noDescription, data)
 }
@@ -195,15 +203,6 @@ func (uc *SecretsUseCase) EditCreds(
 		return uc.update(ctx, token, id, name, description, noDescription, nil)
 	}
 
-	if login != "" && password != "" {
-		data := &goph.Credentials{
-			Login:    login,
-			Password: password,
-		}
-
-		return uc.update(ctx, token, id, name, description, noDescription, data)
-	}
-
 	_, msg, err := uc.Get(ctx, token, id)
 	if err != nil {
 		return fmt.Errorf("SecretsUseCase - EditCreds - uc.Get: %w", err)
@@ -211,7 +210,7 @@ func (uc *SecretsUseCase) EditCreds(
 
 	data, ok := msg.(*goph.Credentials)
 	if !ok {
-		return fmt.Errorf("SecretsUseCase - EditCreds - msg.(*goph.Credentials): %w", errKindMismatch)
+		return fmt.Errorf("SecretsUseCase - EditCreds - msg.(*goph.Credentials): %w", ErrKindMismatch)
 	}
 
 	if login != "" {
@@ -234,13 +233,21 @@ func (uc *SecretsUseCase) EditText(
 	noDescription bool,
 	text string,
 ) error {
-	var data *goph.Text
-
-	if text != "" {
-		data = &goph.Text{
-			Text: text,
-		}
+	if text == "" {
+		return uc.update(ctx, token, id, name, description, noDescription, nil)
 	}
+
+	_, msg, err := uc.Get(ctx, token, id)
+	if err != nil {
+		return fmt.Errorf("SecretsUseCase - EditText - uc.Get: %w", err)
+	}
+
+	data, ok := msg.(*goph.Text)
+	if !ok {
+		return fmt.Errorf("SecretsUseCase - EditText - msg.(*goph.Text): %w", ErrKindMismatch)
+	}
+
+	data.Text = text
 
 	return uc.update(ctx, token, id, name, description, noDescription, data)
 }

@@ -1,7 +1,10 @@
 package editcmd
 
 import (
+	"errors"
+
 	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/usecase"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +45,10 @@ func doEditBin(cmd *cobra.Command, _args []string) error {
 		[]byte(data),
 	); err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")
+
+		if errors.Is(err, usecase.ErrKindMismatch) {
+			return usecase.ErrKindMismatch
+		}
 
 		return entity.Unwrap(err)
 	}

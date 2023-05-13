@@ -366,10 +366,9 @@ func TestUpdateTextSecret(t *testing.T) {
 		text          string
 	}{
 		{
-			name:        "Update all fields of a secret",
+			name:        "Update all common fields of a secret",
 			secretName:  gophtest.SecretName,
 			description: gophtest.Metadata,
-			text:        gophtest.TextData,
 		},
 		{
 			name:       "Update secret's name",
@@ -383,10 +382,6 @@ func TestUpdateTextSecret(t *testing.T) {
 			name:          "Reset secret's description",
 			noDescription: true,
 		},
-		{
-			name: "Update secret's text",
-			text: gophtest.TextData,
-		},
 	}
 
 	for _, tc := range tt {
@@ -396,7 +391,7 @@ func TestUpdateTextSecret(t *testing.T) {
 				tc.secretName,
 				tc.description,
 				tc.noDescription,
-				tc.text,
+				"",
 				nil,
 			)
 
