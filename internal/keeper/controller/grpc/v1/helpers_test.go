@@ -7,6 +7,7 @@ import (
 
 	v1 "github.com/alkurbatov/goph-keeper/internal/keeper/controller/grpc/v1"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
+	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/logger"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/usecase"
 	"github.com/alkurbatov/goph-keeper/internal/libraries/gophtest"
 	uuid "github.com/satori/go.uuid"
@@ -96,5 +97,15 @@ func createTestServerWithFakeAuth(
 ) *grpc.ClientConn {
 	t.Helper()
 
-	return createTestServer(t, useCases, grpc.ChainUnaryInterceptor(fakeAuthInterceptor))
+	log, err := logger.New("info")
+	require.NoError(t, err)
+
+	return createTestServer(
+		t,
+		useCases,
+		grpc.ChainUnaryInterceptor(
+			v1.LoggingUnaryInterceptor(log),
+			fakeAuthInterceptor,
+		),
+	)
 }
