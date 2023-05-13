@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	data string
+	data []byte
 
 	binCmd = &cobra.Command{
 		Use:     "bin [flags]",
@@ -17,12 +17,12 @@ var (
 )
 
 func init() {
-	binCmd.Flags().StringVarP(
+	binCmd.Flags().BytesHexVarP(
 		&data,
 		"binary-data",
 		"b",
-		"",
-		"Binary data to save",
+		nil,
+		"Binary data in hex format",
 	)
 
 	binCmd.MarkFlagRequired("data")
@@ -34,7 +34,7 @@ func doPushBinary(cmd *cobra.Command, _args []string) error {
 		clientApp.AccessToken,
 		secretName,
 		description,
-		[]byte(data),
+		data,
 	)
 	if err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")

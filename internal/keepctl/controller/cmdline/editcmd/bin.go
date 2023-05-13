@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	data string
+	data []byte
 
 	binCmd = &cobra.Command{
 		Use:     "bin [secret id] [flags]",
@@ -21,17 +21,17 @@ var (
 )
 
 func init() {
-	binCmd.Flags().StringVarP(
+	binCmd.Flags().BytesHexVarP(
 		&data,
 		"binary-data",
 		"b",
-		"",
-		"New binary data",
+		nil,
+		"New binary data in hex format",
 	)
 }
 
 func doEditBin(cmd *cobra.Command, _args []string) error {
-	if secretName == "" && description == "" && !noDescription && data == "" {
+	if secretName == "" && description == "" && !noDescription && len(data) == 0 {
 		return errFlagsRequired
 	}
 
@@ -42,7 +42,7 @@ func doEditBin(cmd *cobra.Command, _args []string) error {
 		secretName,
 		description,
 		noDescription,
-		[]byte(data),
+		data,
 	); err != nil {
 		clientApp.Log.Debug().Err(err).Msg("")
 

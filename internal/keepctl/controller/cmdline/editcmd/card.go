@@ -28,25 +28,25 @@ func init() {
 		&number,
 		"number",
 		"",
-		"Card number",
+		"New card number",
 	)
 	cardCmd.Flags().StringVar(
 		&expiration,
 		"expiration",
 		"",
-		"Card expiration date",
+		"New card expiration date",
 	)
 	cardCmd.Flags().StringVar(
 		&holder,
 		"holder",
 		"",
-		"Card holder name and surname",
+		"New card holder name and surname",
 	)
 	cardCmd.Flags().Int32Var(
 		&cvv,
 		"cvv",
 		0,
-		"Card verification value",
+		"New card verification value",
 	)
 }
 
