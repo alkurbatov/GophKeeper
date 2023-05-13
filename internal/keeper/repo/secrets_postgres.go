@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
 	"github.com/alkurbatov/goph-keeper/internal/keeper/infra/postgres"
@@ -120,7 +119,7 @@ func (r *SecretsRepo) Get(
 }
 
 // Update changes secret info and data.
-func (r *SecretsRepo) Update( //nolint:cyclop,gocognit,gocyclo // update is complex operation
+func (r *SecretsRepo) Update(
 	ctx context.Context,
 	owner, id uuid.UUID,
 	changed []string,
@@ -128,44 +127,31 @@ func (r *SecretsRepo) Update( //nolint:cyclop,gocognit,gocyclo // update is comp
 	metadata, data []byte,
 ) error {
 	fn := func(tx postgres.Transaction) error {
-		values := []any{}
-		query := "UPDATE secrets SET"
+		qb := newQueryBuilder("UPDATE secrets").Set()
 
 		for _, field := range changed {
-			if len(values) != 0 {
-				query += ","
-			}
-
 			switch field {
 			case "name":
-				values = append(values, name)
-				query += " name = $" + strconv.Itoa(len(values))
+				qb.Append("name", "=", name)
 
 			case "metadata":
-				values = append(values, metadata)
-				query += " metadata = $" + strconv.Itoa(len(values))
+				qb.Append("metadata", "=", metadata)
 
 			case "data":
-				values = append(values, data)
-				query += " data = $" + strconv.Itoa(len(values))
+				qb.Append("data", "=", data)
 			}
 		}
 
-		if len(values) == 0 {
+		if len(qb.Values()) == 0 {
 			return fmt.Errorf("SecretsRepo - Update: %w", ErrNoValuesToUpdate)
 		}
 
-		values = append(values, id)
-		query += " WHERE secret_id = $" + strconv.Itoa(len(values))
+		qb.Where().
+			Append("secret_id", "=", id).
+			And().
+			Append("owner_id", "=", owner)
 
-		values = append(values, owner)
-		query += " AND owner_id = $" + strconv.Itoa(len(values))
-
-		tag, err := tx.Exec(
-			ctx,
-			query,
-			values...,
-		)
+		tag, err := tx.Exec(ctx, qb.Query(), qb.Values()...)
 		if err != nil {
 			if postgres.IsEntityExists(err) {
 				return entity.ErrSecretNameConflict
