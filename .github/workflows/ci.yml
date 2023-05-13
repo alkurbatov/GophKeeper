@@ -54,3 +54,35 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: "build/docker/Dockerfile"
+
+  integrate:
+    runs-on: ubuntu-latest
+    container: golang:1.20
+
+    env:
+      DATABASE_URI: postgres://postgres:postgres@postgres:5432/goph?sslmode=disable
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: goph
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install golang-migrate
+        run: go install -tags "postgres" github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+      - name: Test migrations up
+        run: migrate -database ${DATABASE_URI} -path ./migrations up
+
+      - name: Test migrations down
+        run: migrate -database ${DATABASE_URI} -path ./migrations down -all
