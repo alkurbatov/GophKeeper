@@ -363,13 +363,6 @@
             <tbody>
               
                 <tr>
-                  <td>user_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Unique used ID in UUIDv4 form. </p></td>
-                </tr>
-              
-                <tr>
                   <td>access_token</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -428,7 +421,7 @@
               
                 <tr>
                   <td>binary</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#bytes">bytes</a></td>
                   <td></td>
                   <td><p>Binary data, limited to 4Kb. </p></td>
                 </tr>
@@ -473,7 +466,7 @@
               
                 <tr>
                   <td>cvv</td>
-                  <td><a href="#int64">int64</a></td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>Card verification value. </p></td>
                 </tr>
@@ -796,6 +789,13 @@
             <tbody>
               
                 <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>ID of a secret in UUIDv4 form. </p></td>
+                </tr>
+              
+                <tr>
                   <td>update_mask</td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
@@ -973,13 +973,6 @@
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-              
-                <tr>
-                  <td>user_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Unique user ID in UUIDv4 form. </p></td>
-                </tr>
               
                 <tr>
                   <td>access_token</td>
@@ -1213,4 +1206,3 @@
     </table>
   </body>
 </html>
-

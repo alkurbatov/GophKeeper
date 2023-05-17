@@ -1,24 +1,23 @@
 package entity
 
 import (
-	"regexp"
-	"strings"
+	"errors"
+
+	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	uuid "github.com/satori/go.uuid"
 )
 
-// Secret is sensitive value (e.g. password) which shouldn't leak to logs.
-type Secret string
+var (
+	ErrSecretNotFound     = errors.New("secret not found")
+	ErrSecretExists       = errors.New("secret already exists")
+	ErrSecretNameConflict = errors.New("secret with such name already exists")
+)
 
-// String converts Secret to string.
-func (s Secret) String() string {
-	return strings.Repeat("*", len(s))
-}
-
-// SecretURI is URI with sensitive values (e.g. login:password) which shouldn't leak to logs.
-type SecretURI string
-
-var _URISecrets = regexp.MustCompile(`(://).*:.*(@)`)
-
-// String converts SecretURI to string.
-func (u SecretURI) String() string {
-	return string(_URISecrets.ReplaceAll([]byte(u), []byte("$1*****:*****$2")))
+// Secret represents full secret info stored in the service.
+type Secret struct {
+	ID       uuid.UUID `db:"secret_id"`
+	Name     string
+	Kind     goph.DataKind
+	Metadata []byte
+	Data     []byte
 }

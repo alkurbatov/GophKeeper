@@ -1,12 +1,78 @@
 package usecase
 
-import "github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+import (
+	"context"
 
-type Auth interface{}
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+	"github.com/alkurbatov/goph-keeper/pkg/goph"
+	uuid "github.com/satori/go.uuid"
+	"google.golang.org/protobuf/proto"
+)
 
-type Secrets interface{}
+type Auth interface {
+	Login(ctx context.Context, username string, key entity.Key) (string, error)
+}
 
-type Users interface{}
+type Secrets interface { //nolint:interfacebloat //no plans to split it right now
+	PushBinary(ctx context.Context, token, name, description string, binary []byte) (uuid.UUID, error)
+
+	PushCard(
+		ctx context.Context,
+		token, name, description string,
+		number, expiration, holder string,
+		cvv int32,
+	) (uuid.UUID, error)
+
+	PushCreds(ctx context.Context, token, name, description, login, password string) (uuid.UUID, error)
+	PushText(ctx context.Context, token, name, description, text string) (uuid.UUID, error)
+
+	List(ctx context.Context, token string) ([]*goph.Secret, error)
+	Get(ctx context.Context, token string, id uuid.UUID) (*goph.Secret, proto.Message, error)
+
+	EditBinary(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name, description string,
+		noDescription bool,
+		binary []byte,
+	) error
+
+	EditCard(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name, description string,
+		noDescription bool,
+		number, expiration, holder string,
+		cvv int32,
+	) error
+
+	EditCreds(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name, description string,
+		noDescription bool,
+		login, password string,
+	) error
+
+	EditText(
+		ctx context.Context,
+		token string,
+		id uuid.UUID,
+		name, description string,
+		noDescription bool,
+		text string,
+	) error
+
+	Delete(ctx context.Context, token string, id uuid.UUID) error
+}
+
+type Users interface {
+	Register(ctx context.Context, username string, key entity.Key) (string, error)
+}
 
 // UseCases is a collection of business logic use cases.
 type UseCases struct {
@@ -16,10 +82,10 @@ type UseCases struct {
 }
 
 // New creates and initializes collection of business logic use cases.
-func New(repos *repo.Repositories) *UseCases {
+func New(key entity.Key, repos *repo.Repositories) *UseCases {
 	return &UseCases{
-		Auth:    NewAuthUseCase(repos.Users),
-		Secrets: NewSecretsUseCase(repos.Secrets),
+		Auth:    NewAuthUseCase(repos.Auth),
+		Secrets: NewSecretsUseCase(key, repos.Secrets),
 		Users:   NewUsersUseCase(repos.Users),
 	}
 }

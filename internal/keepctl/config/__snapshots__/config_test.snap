@@ -1,6 +1,8 @@
 
 [TestDefaultConfig - 1]
 Configuration:
+        Username: 
+        Password: 
         Keeper address: 127.0.0.1:50051
         Certificate authority path: 
         Verbose: false
@@ -8,6 +10,8 @@ Configuration:
 
 [TestConfigFromEnv - 1]
 Configuration:
+        Username: admin
+        Password: ******
         Keeper address: 192.168.0.10:8080
         Certificate authority path: /etc/ssl/root.crt
         Verbose: true

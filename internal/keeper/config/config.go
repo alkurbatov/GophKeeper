@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/alkurbatov/goph-keeper/internal/keeper/entity"
+	"github.com/alkurbatov/goph-keeper/internal/libraries/creds"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -20,8 +20,8 @@ var (
 
 type Config struct {
 	Address     string
-	DatabaseURI entity.SecretURI
-	Secret      entity.Secret
+	DatabaseURI creds.ConnURI
+	Secret      creds.Password
 	CrtPath     string
 	KeyPath     string
 	LogLevel    string
@@ -76,8 +76,8 @@ func New() (*Config, error) {
 
 	cfg := &Config{
 		Address:     viper.GetString("address"),
-		DatabaseURI: entity.SecretURI(viper.GetString("database-uri")),
-		Secret:      entity.Secret(viper.GetString("secret")),
+		DatabaseURI: creds.ConnURI(viper.GetString("database-uri")),
+		Secret:      creds.Password(viper.GetString("secret")),
 		CrtPath:     viper.GetString("crt-path"),
 		KeyPath:     viper.GetString("key-path"),
 		LogLevel:    viper.GetString("log-level"),

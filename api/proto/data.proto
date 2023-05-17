@@ -20,7 +20,7 @@ message Text {
 // Arbitrary binary data.
 message Binary {
   // Binary data, limited to 4Kb.
-  string binary = 1;
+  bytes binary = 1;
 }
 
 // Bank card info.
@@ -32,5 +32,5 @@ message Card {
   // Card holder name.
   string holder = 3;
   // Card verification value.
-  int64 cvv = 4;
+  int32 cvv = 4;
 }

@@ -1,6 +1,12 @@
 package usecase
 
-import "github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+import (
+	"context"
+	"fmt"
+
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/entity"
+	"github.com/alkurbatov/goph-keeper/internal/keepctl/repo"
+)
 
 var _ Users = (*UsersUseCase)(nil)
 
@@ -12,4 +18,20 @@ type UsersUseCase struct {
 // NewUsersUseCase create and initializes new UsersUseCase object.
 func NewUsersUseCase(users repo.Users) *UsersUseCase {
 	return &UsersUseCase{users}
+}
+
+// Register creates a new user.
+func (uc *UsersUseCase) Register(
+	ctx context.Context,
+	username string,
+	key entity.Key,
+) (string, error) {
+	securityKey := key.Hash()
+
+	accessToken, err := uc.usersRepo.Register(ctx, username, securityKey)
+	if err != nil {
+		return "", fmt.Errorf("UsersUseCase - Register - uc.usersRepo.Register: %w", err)
+	}
+
+	return accessToken, nil
 }

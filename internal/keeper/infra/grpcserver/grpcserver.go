@@ -18,14 +18,19 @@ type Server struct {
 	notify  chan error
 }
 
-// New creates new instance of gRPC server.
-func New(address, crtPath, keyPath string) (*Server, error) {
+// NewSecureServer creates new instance of gRPC server operating over SSL.
+func New(address, crtPath, keyPath string, opts ...grpc.ServerOption) (*Server, error) {
 	creds, err := credentials.NewServerTLSFromFile(crtPath, keyPath)
 	if err != nil {
 		return nil, fmt.Errorf("grpcserver - New - credentials.NewServerTLSFromFile: %w", err)
 	}
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	srvOpts := []grpc.ServerOption{
+		grpc.Creds(creds),
+	}
+	srvOpts = append(srvOpts, opts...)
+
+	grpcServer := grpc.NewServer(srvOpts...)
 
 	s := &Server{
 		address: address,
